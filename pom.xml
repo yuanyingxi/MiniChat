@@ -12,6 +12,8 @@
     <description>MiniChat</description>
     <modules>
         <module>minichat-common</module>
+        <module>minichat-auth</module>
+        <module>minichat-user</module>
     </modules>
     <properties>
         <java.version>21</java.version>
@@ -97,6 +99,14 @@
                 <artifactId>redisson-spring-boot-starter</artifactId>
                 <version>${redisson.version}</version>
             </dependency>
+
+            <!-- 内部模块引用 -->
+            <dependency>
+                <groupId>com.minichat</groupId>
+                <artifactId>minichat-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
