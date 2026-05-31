@@ -12,6 +12,7 @@
     <description>MiniChat</description>
     <modules>
         <module>minichat-common</module>
+        <module>minichat-message</module>
     </modules>
     <properties>
         <java.version>21</java.version>
