@@ -1,0 +1,66 @@
+:root {
+  /* LINE Brand Colors */
+  --line-green: #06C755;
+  --line-green-hover: #05B14C;
+  --line-green-active: #049A42;
+  --line-green-light: #E8F5EC;
+  --line-green-subtle: #F0FAF3;
+
+  /* Neutral Palette */
+  --line-bg-primary: #FFFFFF;
+  --line-bg-secondary: #F6F6F6;
+  --line-bg-chat: #EEEEF0;
+
+  /* Text Colors */
+  --line-text-primary: #333333;
+  --line-text-secondary: #666666;
+  --line-text-tertiary: #999999;
+  --line-text-placeholder: #BFBFBF;
+
+  /* Borders & Dividers */
+  --line-border: #E8E8E8;
+  --line-border-light: #F0F0F0;
+
+  /* Shadows */
+  --line-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --line-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+
+  /* Radii */
+  --line-radius-sm: 8px;
+  --line-radius-md: 12px;
+  --line-radius-lg: 16px;
+  --line-radius-pill: 24px;
+  --line-radius-bubble: 18px;
+
+  /* Bubble Colors */
+  --line-bubble-sent-bg: #06C755;
+  --line-bubble-sent-text: #FFFFFF;
+  --line-bubble-received-bg: #FFFFFF;
+  --line-bubble-received-text: #333333;
+
+  /* Badge */
+  --line-badge-bg: #FF3B30;
+
+  /* Sidebar */
+  --line-sidebar-width: 320px;
+  --line-sidebar-item-hover: #F5F5F5;
+  --line-sidebar-item-active: #E8F5EC;
+
+  /* Input */
+  --line-input-radius: 20px;
+
+  /* Override Element Plus primary color */
+  --el-color-primary: #06C755;
+  --el-color-primary-light-3: #39D377;
+  --el-color-primary-light-5: #6CDE99;
+  --el-color-primary-light-7: #9FEABB;
+  --el-color-primary-light-8: #B8F1CC;
+  --el-color-primary-light-9: #E8F5EC;
+  --el-color-primary-dark-2: #059E44;
+
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+  --el-dialog-border-radius: 16px;
+  --el-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
