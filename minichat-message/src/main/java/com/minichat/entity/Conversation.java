@@ -6,28 +6,22 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+@TableName("tb_conversation")
 @Data
-@TableName("tb_message")
-public class Message {
+public class Conversation {
 
     @TableId
-    private Long messageId;
-
     private Long conversationId;
 
-    private Integer chatType;
+    private Integer conversationType;
 
-    private Long fromId;
+    private Long targetId;
 
-    private Long toId;
+    private Long lastMessageId;
 
-    private Integer messageType;
+    private String lastMessageContent;
 
-    private Integer status;
-
-    private Long clientSendTime;
-
-    private String content;
+    private LocalDateTime lastMessageTime;
 
     private LocalDateTime createTime;
 }

@@ -3,6 +3,7 @@ package com.minichat.controller;
 import com.minichat.dto.SendMessageReq;
 import com.minichat.entity.Message;
 import com.minichat.service.MessageService;
+import com.minichat.vo.MessageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,13 +18,11 @@ public class MessageController {
 
     @PostMapping("/send")
     public Long send(@RequestBody SendMessageReq req) {
-
         return messageService.sendMessage(req);
     }
 
     @GetMapping("/history")
-    public List<Message> history(@RequestParam("userId") Long userId) {
-
-        return messageService.getHistory(userId);
+    public List<MessageVO> history(@RequestParam("conversationId") Long conversationId) {
+        return messageService.getHistory(conversationId);
     }
 }

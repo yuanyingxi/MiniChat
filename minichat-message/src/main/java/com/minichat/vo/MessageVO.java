@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class MessageVO { //返回给前端的数据
+public class MessageVO {
 
     private Long messageId;
 
@@ -15,7 +15,7 @@ public class MessageVO { //返回给前端的数据
 
     private Integer messageType;
 
-    private String content;
+    private Object content;
 
     private LocalDateTime createTime;
 }
