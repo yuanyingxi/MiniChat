@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class MessageVO {
 
-    private Long messageId;
+    private Long Id;
 
     private Long fromId;
 

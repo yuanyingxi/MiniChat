@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class Conversation {
 
     @TableId
-    private Long conversationId;
+    private Long id;
 
     private Integer conversationType;
 

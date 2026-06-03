@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class ConversationVO {
 
-    private Long conversationId;
+    private Long Id;
 
     private Integer conversationType;
 

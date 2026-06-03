@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class Message {
 
     @TableId
-    private Long messageId;
+    private Long id;
 
     private Long conversationId;
 

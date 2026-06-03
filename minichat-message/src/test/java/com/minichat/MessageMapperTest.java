@@ -17,7 +17,7 @@ public class MessageMapperTest {
 
         Message message = new Message();
 
-        message.setMessageId(2L);
+        message.setId(2L);
         message.setChatType(1);
         message.setFromId(1001L);
         message.setToId(1002L);
@@ -42,7 +42,7 @@ public class MessageMapperTest {
 
         Message message = new Message();
 
-        message.setMessageId(2L);
+        message.setId(2L);
         message.setContent("{\"text\":\"hello update\"}");
 
         int rows = messageMapper.updateById(message);

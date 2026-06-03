@@ -35,8 +35,8 @@ public class ConversationServiceImpl implements ConversationService {
         ConversationVO vo =
                 new ConversationVO();
 
-        vo.setConversationId(
-                conversation.getConversationId()
+        vo.setId(
+                conversation.getId()
         );
 
         vo.setConversationType(
