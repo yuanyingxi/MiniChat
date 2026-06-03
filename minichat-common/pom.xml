@@ -11,5 +11,13 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <dependencies>
+        <!-- lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+
     <artifactId>minichat-common</artifactId>
 </project>
