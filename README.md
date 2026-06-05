@@ -128,3 +128,12 @@ main                        # 稳定主线，只接受合并，不直接开发
 - 改完测试全部通过后，通过 PR 合并到 main
 - 当改动了【环境、数据库、公共架构】，必须在 PR 里写清楚通知，并在群里同步
 - 合并前执行 `mvn clean compile` 确保编译通过
+- 新的依赖统一写在父 pom.xml 里面，然后子 pom.xml 继承，方便看整个项目上技术栈
+
+---
+
+## 提醒
+
+> **前端开发**：查看路由，直接 pull user 模块，然后启动访问 http://localhost:8081/doc.html ；或者用 api-docs.json 也行，用插件或者导入 apifox 都行。
+>
+> **其他模块开发**：需要查用户资料时，通过 Feign 调用 `GET /internal/user/{id}`（返回裸对象，不包 Result）。`InternalUserResponse` 定义在 `minichat-common`。后续网关建好后统一走网关，内部接口不走网关。
