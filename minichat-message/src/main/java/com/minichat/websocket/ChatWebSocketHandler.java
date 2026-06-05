@@ -1,7 +1,10 @@
 package com.minichat.websocket;
 
 import com.minichat.constant.RedisKeyConstant;
+import com.minichat.dto.SendMessageReq;
+import com.minichat.dto.WsMessage;
 import com.minichat.mapper.MessageMapper;
+import com.minichat.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -19,8 +22,6 @@ import com.minichat.entity.Message;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @RequiredArgsConstructor
@@ -28,21 +29,31 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
-
-    private static final Map<Long, WebSocketSession>
-            ONLINE_USERS = new ConcurrentHashMap<>();
+    private final MessageService messageService;
     private final MessageMapper messageMapper;
+    private final SessionManager sessionManager;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
 
-        String query = session.getUri().getQuery();
+        // 获取用户Id
+        Long userId =
+                Long.parseLong(
+                        session.getUri()
+                                .getQuery()
+                                .split("=")[1]
+                );
 
-        Long userId = Long.parseLong(
-                query.split("=")[1]
+        session.getAttributes().put(
+                "userId",
+                userId
         );
 
-        ONLINE_USERS.put(userId, session);
+        // 用户上线
+        sessionManager.addSession(
+                userId,
+                session
+        );
 
         System.out.println(
                 "用户上线：" + userId
@@ -50,10 +61,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         System.out.println(
                 "当前在线人数：" +
-                        ONLINE_USERS.size()
+                        sessionManager.onlineCount()
         );
 
 
+        // redis
         String key = RedisKeyConstant.OFFLINE_MESSAGE + userId;
 
         List<String> offlineMessages =
@@ -71,73 +83,74 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    public void afterConnectionClosed(
+            WebSocketSession session,
+            CloseStatus status) {
 
-        ONLINE_USERS.values().remove(session);
+        sessionManager.removeSession(session);
+
         System.out.println("连接关闭");
-
-        // TODO: 可以解析userId（后续优化）
-    }
-
-    public boolean isOnline(Long userId) {
-        return ONLINE_USERS.containsKey(userId);
-    }
-
-    public void onUserOffline(Long userId) {
-        System.out.println("用户离线 userId=" + userId);
-
-        // 👉 下一步：这里接 Redis 离线消息
-    }
-
-    public void sendToUser(Long userId, String message) {
-
-        WebSocketSession session = ONLINE_USERS.get(userId);
-
-        if (session == null) {
-            System.out.println("用户离线 userId=" + userId);
-            return;
-        }
-
-        try {
-            session.sendMessage(new TextMessage(message));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
-    protected void handleTextMessage(
-            WebSocketSession session,
-            TextMessage message
-    ) throws Exception {
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        // 客户端通过 WebSocket 向服务器发送文本消息时触发
 
         String payload = message.getPayload();
 
-        JSONObject json = JSONUtil.parseObj(payload);
+        WsMessage wsMessage = JSONUtil.toBean(payload, WsMessage.class);
 
-        Integer type = json.getInt("type");
+        switch (wsMessage.getType()) {
 
-        // 1️⃣ ACK消息
-        if (type != null && type == 2) {
-            handleAck(json);
-            return;
+            case 1:
+                handleChat(session, wsMessage.getData());
+                break;
+
+            case 2:
+                handleAck(session, wsMessage.getData());
+                break;
+
+            default:
+                break;
         }
-
-        // 2️⃣ 普通消息（如果你未来要扩展双向WS）
     }
 
-    private void handleAck(JSONObject json) {
+    private void handleChat(
+            WebSocketSession session,
+            JSONObject data
+    ) {
+
+        SendMessageReq req =
+                data.toBean(SendMessageReq.class);
+
+        Long userId =
+                (Long) session.getAttributes()
+                        .get("userId");
+
+        messageService.sendMessage(
+                req,
+                userId
+        );
+    }
+
+    private void handleAck(
+            WebSocketSession session,
+            JSONObject json
+    ) {
 
         Long messageId = json.getLong("messageId");
-        Long userId = json.getLong("userId");
 
         if (messageId == null) return;
+
+        Long userId =
+                (Long) session.getAttributes()
+                        .get("userId");
 
         messageMapper.update(
                 null,
                 Wrappers.<Message>lambdaUpdate()
                         .eq(Message::getId, messageId)
-                        .set(Message::getStatus, 2) // delivered
+                        .set(Message::getStatus, 2)
         );
 
         System.out.println("[ACK] messageId=" + messageId + ", userId=" + userId);

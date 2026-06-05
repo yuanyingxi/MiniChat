@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface MessageService {
 
-    Long sendMessage(SendMessageReq req);
+    Long sendMessage(
+            SendMessageReq req,
+            Long fromId
+    );
 
     List<MessageVO> getHistory(Long conversationId);
 }
