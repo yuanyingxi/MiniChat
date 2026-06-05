@@ -8,7 +8,6 @@ services:
     restart: always
     environment:
       - MODE=standalone
-      - SPRING_DATASOURCE_PLATFORM=embedded
       - TZ=Asia/Shanghai
     ports:
       - "${NACOS_PORT}:8848"      # HTTP 端口

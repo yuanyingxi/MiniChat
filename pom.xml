@@ -12,7 +12,6 @@
     <description>MiniChat</description>
     <modules>
         <module>minichat-common</module>
-        <module>minichat-auth</module>
         <module>minichat-user</module>
     </modules>
     <properties>
@@ -33,7 +32,7 @@
         <redisson.version>3.34.0</redisson.version>
         <!-- 第三方业务服务接口 -->
         <aliyun-core.version>4.6.3</aliyun-core.version>
-        <aliyun-dysmsapi.version>2.2.1</aliyun-dysmsapi.version>
+        <aliyun-dypnsapi.version>1.2.12</aliyun-dypnsapi.version>
         <aliyun-oss.version>3.17.4</aliyun-oss.version>
         <jjwt.version>0.12.5</jjwt.version>
         <lombok.version>1.18.32</lombok.version>
@@ -96,8 +95,8 @@
             </dependency>
             <dependency>
                 <groupId>com.aliyun</groupId>
-                <artifactId>aliyun-java-sdk-dysmsapi</artifactId>
-                <version>${aliyun-dysmsapi.version}</version>
+                <artifactId>aliyun-java-sdk-dypnsapi</artifactId>
+                <version>${aliyun-dypnsapi.version}</version>
             </dependency>
             <!-- RocketMQ -->
             <dependency>
@@ -140,6 +139,11 @@
                 <version>${jjwt.version}</version>
                 <scope>runtime</scope>
             </dependency>
+            <!-- OpenFeign 服务间调用 -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-openfeign</artifactId>
+            </dependency>
 
             <!-- 内部模块引用 -->
             <dependency>
@@ -158,6 +162,16 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <parameters>true</parameters>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
