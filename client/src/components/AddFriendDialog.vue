@@ -12,6 +12,7 @@ const chatStore = useChatStore()
 const keyword = ref('')
 const results = ref<User[]>([])
 const searching = ref(false)
+const requestedIds = ref<Set<number>>(new Set())
 
 async function handleSearch() {
   if (!keyword.value.trim()) return
@@ -23,23 +24,26 @@ async function handleSearch() {
   }
 }
 
-async function handleAdd(user: User) {
+async function handleSendRequest(user: User) {
   try {
-    await chatStore.addFriend(user.id)
-    ElMessage.success(`已添加「${user.nickname}」为好友`)
+    await chatStore.sendFriendRequest(user.id)
+    requestedIds.value.add(user.id)
+    ElMessage.success(`已向「${user.nickname}」发送好友请求`)
   } catch (e: any) {
     ElMessage.warning(e.message)
   }
 }
 
-function isFriend(userId: number) {
-  return chatStore.friends.some(f => f.id === userId)
+function getStatus(user: User): 'friend' | 'requested' | 'none' {
+  if (chatStore.friends.some(f => f.friendId === user.id)) return 'friend'
+  if (requestedIds.value.has(user.id)) return 'requested'
+  return 'none'
 }
 </script>
 
 <template>
   <el-dialog :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" title="添加好友" width="440px">
-    <el-input v-model="keyword" placeholder="搜索用户名或昵称" @keyup.enter="handleSearch" clearable>
+    <el-input v-model="keyword" placeholder="搜索手机号或昵称" @keyup.enter="handleSearch" clearable>
       <template #append>
         <el-button :icon="Search" @click="handleSearch" :loading="searching" />
       </template>
@@ -50,17 +54,18 @@ function isFriend(userId: number) {
         <el-avatar :size="36" :src="user.avatar" />
         <div class="result-info">
           <span class="result-name">{{ user.nickname }}</span>
-          <span class="result-username">@{{ user.username }}</span>
+          <span class="result-username">{{ user.phone }}</span>
         </div>
         <el-button
-          v-if="!isFriend(user.id)"
+          v-if="getStatus(user) === 'none'"
           size="small"
           type="primary"
-          @click="handleAdd(user)"
+          @click="handleSendRequest(user)"
           round
         >
           添加
         </el-button>
+        <el-tag v-else-if="getStatus(user) === 'requested'" size="small" type="warning">已请求</el-tag>
         <el-tag v-else size="small" type="info">已添加</el-tag>
       </div>
       <el-empty v-if="keyword && !searching && results.length === 0" description="未找到用户" :image-size="60" />

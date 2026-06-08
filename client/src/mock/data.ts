@@ -1,66 +1,19 @@
-import type { User, Friend, Group, Message, Conversation } from '@/types'
+import type { User, Conversation, Message } from '@/types'
 
 const avatarUrl = (id: number) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=user${id}`
 
 export const mockUsers: User[] = [
-  { id: 1, username: 'admin', nickname: '管理员', avatar: avatarUrl(1), signature: '系统管理员', status: 'online' },
-  { id: 2, username: 'zhangsan', nickname: '张三', avatar: avatarUrl(2), signature: '今天天气不错', status: 'online' },
-  { id: 3, username: 'lisi', nickname: '李四', avatar: avatarUrl(3), signature: '学习使我快乐', status: 'offline' },
-  { id: 4, username: 'wangwu', nickname: '王五', avatar: avatarUrl(4), signature: '永远年轻', status: 'online' },
-  { id: 5, username: 'zhaoliu', nickname: '赵六', avatar: avatarUrl(5), signature: '加油！', status: 'offline' },
-  { id: 6, username: 'sunqi', nickname: '孙七', avatar: avatarUrl(6), signature: '相信过程', status: 'online' },
-  { id: 7, username: 'zhouba', nickname: '周八', avatar: avatarUrl(7), signature: '保持热爱', status: 'offline' },
-  { id: 8, username: 'wujiu', nickname: '吴九', avatar: avatarUrl(8), signature: '前端开发工程师', status: 'online' },
-  { id: 9, username: 'zhengshi', nickname: '郑十', avatar: avatarUrl(9), signature: '全栈工程师', status: 'online' },
-  { id: 10, username: 'test', nickname: '测试用户', avatar: avatarUrl(10), signature: '测试中...', status: 'online' },
-]
-
-function makeFriend(user: User, remark: string, blocked: boolean): Friend {
-  return { id: user.id, username: user.username, nickname: user.nickname, avatar: user.avatar, signature: user.signature, status: user.status, remark, blocked }
-}
-
-export const mockFriends: Friend[] = [
-  makeFriend(mockUsers[1]!, '老张', false),
-  makeFriend(mockUsers[2]!, '', false),
-  makeFriend(mockUsers[3]!, '小王', false),
-  makeFriend(mockUsers[4]!, '', false),
-  makeFriend(mockUsers[5]!, '', false),
-  makeFriend(mockUsers[6]!, '周哥', true),
-]
-
-export const mockGroups: Group[] = [
-  {
-    id: 1, name: '项目讨论组', avatar: avatarUrl(101),
-    ownerId: 1,
-    members: [
-      { userId: 1, nickname: '管理员', avatar: avatarUrl(1), role: 'owner' },
-      { userId: 2, nickname: '张三', avatar: avatarUrl(2), role: 'member' },
-      { userId: 3, nickname: '李四', avatar: avatarUrl(3), role: 'admin' },
-      { userId: 4, nickname: '王五', avatar: avatarUrl(4), role: 'member' },
-    ],
-    createdAt: '2025-01-15T10:00:00',
-  },
-  {
-    id: 2, name: '技术交流群', avatar: avatarUrl(102),
-    ownerId: 2,
-    members: [
-      { userId: 2, nickname: '张三', avatar: avatarUrl(2), role: 'owner' },
-      { userId: 5, nickname: '赵六', avatar: avatarUrl(5), role: 'member' },
-      { userId: 6, nickname: '孙七', avatar: avatarUrl(6), role: 'member' },
-    ],
-    createdAt: '2025-02-20T14:30:00',
-  },
-  {
-    id: 3, name: '摸鱼群', avatar: avatarUrl(103),
-    ownerId: 1,
-    members: [
-      { userId: 1, nickname: '管理员', avatar: avatarUrl(1), role: 'owner' },
-      { userId: 8, nickname: '吴九', avatar: avatarUrl(8), role: 'member' },
-      { userId: 9, nickname: '郑十', avatar: avatarUrl(9), role: 'member' },
-    ],
-    createdAt: '2025-03-10T09:00:00',
-  },
+  { id: 1, phone: '13800000001', nickname: '管理员', avatar: avatarUrl(1), signature: '系统管理员', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 2, phone: '13800000002', nickname: '张三', avatar: avatarUrl(2), signature: '今天天气不错', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 3, phone: '13800000003', nickname: '李四', avatar: avatarUrl(3), signature: '学习使我快乐', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 4, phone: '13800000004', nickname: '王五', avatar: avatarUrl(4), signature: '永远年轻', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 5, phone: '13800000005', nickname: '赵六', avatar: avatarUrl(5), signature: '加油！', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 6, phone: '13800000006', nickname: '孙七', avatar: avatarUrl(6), signature: '相信过程', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 7, phone: '13800000007', nickname: '周八', avatar: avatarUrl(7), signature: '保持热爱', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 8, phone: '13800000008', nickname: '吴九', avatar: avatarUrl(8), signature: '前端开发工程师', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 9, phone: '13800000009', nickname: '郑十', avatar: avatarUrl(9), signature: '全栈工程师', gender: null, createTime: '2025-01-01T00:00:00' },
+  { id: 10, phone: '13800000010', nickname: '测试用户', avatar: avatarUrl(10), signature: '测试中...', gender: null, createTime: '2025-01-01T00:00:00' },
 ]
 
 const now = new Date()

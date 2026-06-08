@@ -24,7 +24,7 @@ async function handleCreate() {
   }
   if (!userStore.currentUser) return
 
-  await chatStore.createGroup(groupName.value.trim(), selectedFriends.value, userStore.currentUser.id)
+  await chatStore.createGroup(groupName.value.trim(), selectedFriends.value)
   ElMessage.success('群聊创建成功')
   groupName.value = ''
   selectedFriends.value = []
@@ -42,8 +42,8 @@ async function handleCreate() {
         <el-checkbox-group v-model="selectedFriends">
           <el-checkbox
             v-for="friend in chatStore.friends.filter(f => !f.blocked)"
-            :key="friend.id"
-            :value="friend.id"
+            :key="friend.friendId"
+            :value="friend.friendId"
             :label="friend.remark || friend.nickname"
           />
         </el-checkbox-group>

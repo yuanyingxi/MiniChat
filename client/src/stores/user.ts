@@ -8,33 +8,44 @@ export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(null)
   const token = ref('')
 
-  async function login(username: string, password: string) {
-    const user = await authApi.login({ username, password })
-    currentUser.value = user
-    token.value = 'mock-token-' + user.id
+  async function login(phone: string, password: string) {
+    const jwt = await authApi.login(phone, password)
+    token.value = jwt
+    localStorage.setItem('minichat_token', jwt)
+    const parts = jwt.split('.')
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1]!))
+      const userId = String(payload.sub ?? '')
+      localStorage.setItem('minichat_user_id', userId)
+      const user = await userApi.getUser(Number(userId))
+      currentUser.value = user
+    }
   }
 
-  async function register(username: string, password: string) {
-    await authApi.register({ username, password, confirmPassword: password })
+  async function register(phone: string, smsCode: string, password: string) {
+    await authApi.register(phone, smsCode, password)
   }
 
   async function logout() {
-    await authApi.logout()
+    try { await authApi.logout() } catch { /* ignore */ }
     currentUser.value = null
     token.value = ''
+    localStorage.removeItem('minichat_token')
+    localStorage.removeItem('minichat_user_id')
   }
 
   async function updateProfile(data: Partial<User>) {
     if (!currentUser.value) return
-    const updated = await userApi.updateUser(currentUser.value.id, data)
-    currentUser.value = updated
+    await userApi.updateUser(currentUser.value.id, data)
+    currentUser.value = { ...currentUser.value, ...data }
   }
 
   async function deleteAccount() {
     if (!currentUser.value) return
-    await userApi.deleteUser(currentUser.value.id)
     currentUser.value = null
     token.value = ''
+    localStorage.removeItem('minichat_token')
+    localStorage.removeItem('minichat_user_id')
   }
 
   return { currentUser, token, login, register, logout, updateProfile, deleteAccount }

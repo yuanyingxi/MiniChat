@@ -30,7 +30,6 @@ onMounted(async () => {
 })
 
 function handleLogout() {
-  localStorage.removeItem('minichat_token')
   userStore.logout()
   router.push('/login')
 }

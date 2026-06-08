@@ -55,8 +55,8 @@ async function handleDeleteAccount() {
       <el-form-item label="头像">
         <el-avatar :size="56" :src="userStore.currentUser?.avatar" />
       </el-form-item>
-      <el-form-item label="用户名">
-        <el-input :model-value="userStore.currentUser?.username" disabled />
+      <el-form-item label="手机号">
+        <el-input :model-value="userStore.currentUser?.phone" disabled />
       </el-form-item>
       <el-form-item label="昵称">
         <el-input v-model="form.nickname" />

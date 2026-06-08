@@ -1,42 +1,60 @@
 export interface User {
   id: number
-  username: string
+  phone: string
   nickname: string
   avatar: string
   signature: string
-  status: 'online' | 'offline'
+  gender: number | null
+  createTime: string
 }
 
 export interface LoginForm {
-  username: string
+  phone: string
   password: string
 }
 
 export interface RegisterForm {
-  username: string
+  phone: string
+  smsCode: string
   password: string
-  confirmPassword: string
 }
 
-export interface Friend extends User {
+export interface Friend {
+  friendId: number
+  nickname: string
+  avatar: string
   remark: string
-  blocked: boolean
+  createTime: string
+  blocked?: boolean
+}
+
+export interface FriendRequestVO {
+  id: number
+  fromId: number
+  toId: number
+  remark: string
+  status: number
+  createTime: string
+  updateTime: string
 }
 
 export interface Group {
-  id: number
+  groupId: number
   name: string
   avatar: string
   ownerId: number
-  members: GroupMember[]
-  createdAt: string
+  ownerNickname: string
+  notice: string
+  memberCount: number
+  createTime: string
 }
 
-export interface GroupMember {
+export interface GroupMemberVO {
   userId: number
   nickname: string
   avatar: string
-  role: 'owner' | 'admin' | 'member'
+  role: number
+  alias: string
 }
 
 export interface Conversation {

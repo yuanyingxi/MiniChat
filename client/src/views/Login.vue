@@ -7,18 +7,21 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const userStore = useUserStore()
 
-const form = ref({ username: '', password: '' })
+const form = ref({ phone: '', password: '' })
 const loading = ref(false)
 
 async function handleLogin() {
-  if (!form.value.username || !form.value.password) {
-    ElMessage.warning('请输入用户名和密码')
+  if (!form.value.phone || !form.value.password) {
+    ElMessage.warning('请输入手机号和密码')
+    return
+  }
+  if (!/^1[3-9]\d{9}$/.test(form.value.phone)) {
+    ElMessage.warning('请输入正确的手机号')
     return
   }
   loading.value = true
   try {
-    await userStore.login(form.value.username, form.value.password)
-    localStorage.setItem('minichat_token', userStore.token)
+    await userStore.login(form.value.phone, form.value.password)
     ElMessage.success('登录成功')
     router.push('/chat')
   } catch (e: any) {
@@ -38,8 +41,8 @@ async function handleLogin() {
       <h2>MiniChat</h2>
       <p>即时通讯系统</p>
       <el-form :model="form" @submit.prevent="handleLogin" label-position="top">
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" placeholder="请输入用户名" prefix-icon="User" />
+        <el-form-item label="手机号">
+          <el-input v-model="form.phone" placeholder="请输入手机号" prefix-icon="Iphone" maxlength="11" />
         </el-form-item>
         <el-form-item label="密码">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" prefix-icon="Lock" show-password />

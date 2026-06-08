@@ -53,41 +53,40 @@ export const useChatStore = defineStore('chat', () => {
     friends.value = await friendApi.getFriends()
   }
 
-  async function addFriend(userId: number) {
-    const friend = await friendApi.addFriend(userId)
-    friends.value.push(friend)
+  async function sendFriendRequest(toId: number, remark?: string) {
+    await friendApi.sendFriendRequest(toId, remark)
   }
 
-  async function deleteFriend(userId: number) {
-    await friendApi.deleteFriend(userId)
-    friends.value = friends.value.filter(f => f.id !== userId)
+  async function deleteFriend(friendId: number) {
+    await friendApi.deleteFriend(friendId)
+    friends.value = friends.value.filter(f => f.friendId !== friendId)
   }
 
-  async function blockFriend(userId: number, blocked: boolean) {
-    await friendApi.blockFriend(userId, blocked)
-    const f = friends.value.find(f => f.id === userId)
-    if (f) f.blocked = blocked
+  async function blockFriend(friendId: number) {
+    await friendApi.blockFriend(friendId)
+    const f = friends.value.find(f => f.friendId === friendId)
+    if (f) f.blocked = !f.blocked
   }
 
   async function loadGroups() {
     groups.value = await groupApi.getGroups()
   }
 
-  async function createGroup(name: string, memberIds: number[], ownerId: number) {
-    const group = await groupApi.createGroup({ name, memberIds }, ownerId)
-    groups.value.push(group)
-    return group
+  async function createGroup(name: string, memberIds: number[]) {
+    const groupId = await groupApi.createGroup({ name, memberIds })
+    await loadGroups()
+    return groupId
   }
 
   async function leaveGroup(groupId: number) {
     await groupApi.leaveGroup(groupId)
-    groups.value = groups.value.filter(g => g.id !== groupId)
+    groups.value = groups.value.filter(g => g.groupId !== groupId)
   }
 
   return {
     conversations, activeConversation, messages, friends, groups, loading,
     loadConversations, selectConversation, sendMessage,
-    loadFriends, addFriend, deleteFriend, blockFriend,
+    loadFriends, sendFriendRequest, deleteFriend, blockFriend,
     loadGroups, createGroup, leaveGroup,
   }
 })

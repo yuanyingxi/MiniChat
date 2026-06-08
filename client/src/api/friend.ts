@@ -1,33 +1,30 @@
-import { mockFriends } from '@/mock/data'
-import type { Friend } from '@/types'
+import { get, post, del } from '@/utils/request'
+import type { Friend, FriendRequestVO } from '@/types'
 
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms))
-
-let friends = [...mockFriends]
-
-export async function getFriends(): Promise<Friend[]> {
-  await delay()
-  return [...friends]
+export function getFriends() {
+  return get<Friend[]>('/friend/list')
 }
 
-export async function addFriend(userId: number): Promise<Friend> {
-  await delay()
-  const { mockUsers } = await import('@/mock/data')
-  const user = mockUsers.find(u => u.id === userId)
-  if (!user) throw new Error('用户不存在')
-  if (friends.find(f => f.id === userId)) throw new Error('已是好友')
-  const friend: Friend = { ...user, remark: '', blocked: false }
-  friends.push(friend)
-  return { ...friend }
+export function sendFriendRequest(toId: number, remark?: string) {
+  return post<void>('/friend/request', { toId, remark })
 }
 
-export async function deleteFriend(userId: number): Promise<void> {
-  await delay()
-  friends = friends.filter(f => f.id !== userId)
+export function acceptFriendRequest(id: number) {
+  return post<void>(`/friend/request/${id}/accept`)
 }
 
-export async function blockFriend(userId: number, blocked: boolean): Promise<void> {
-  await delay()
-  const f = friends.find(f => f.id === userId)
-  if (f) f.blocked = blocked
+export function rejectFriendRequest(id: number) {
+  return post<void>(`/friend/request/${id}/reject`)
+}
+
+export function getFriendRequests() {
+  return get<FriendRequestVO[]>('/friend/requests')
+}
+
+export function deleteFriend(friendId: number) {
+  return del<void>(`/friend/${friendId}`)
+}
+
+export function blockFriend(friendId: number) {
+  return post<void>(`/friend/${friendId}/block`)
 }

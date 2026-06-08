@@ -15,13 +15,13 @@ async function handleLeave(groupId: number, name: string) {
 
 <template>
   <div class="group-list">
-    <div v-for="group in chatStore.groups" :key="group.id" class="group-item">
+    <div v-for="group in chatStore.groups" :key="group.groupId" class="group-item">
       <el-avatar :size="36" :src="group.avatar" />
       <div class="group-info">
         <span class="group-name">{{ group.name }}</span>
-        <span class="group-members">{{ group.members.length }} 人</span>
+        <span class="group-members">{{ group.memberCount }} 人</span>
       </div>
-      <el-button size="small" type="danger" text @click="handleLeave(group.id, group.name)">
+      <el-button size="small" type="danger" text @click="handleLeave(group.groupId, group.name)">
         退出
       </el-button>
     </div>
