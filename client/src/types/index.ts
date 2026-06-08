@@ -1,5 +1,5 @@
 export interface User {
-  id: number
+  id: number | string
   phone: string
   nickname: string
   avatar: string
@@ -20,7 +20,7 @@ export interface RegisterForm {
 }
 
 export interface Friend {
-  friendId: number
+  friendId: number | string
   nickname: string
   avatar: string
   remark: string
@@ -29,9 +29,9 @@ export interface Friend {
 }
 
 export interface FriendRequestVO {
-  id: number
-  fromId: number
-  toId: number
+  id: number | string
+  fromId: number | string
+  toId: number | string
   remark: string
   status: number
   createTime: string
@@ -39,10 +39,10 @@ export interface FriendRequestVO {
 }
 
 export interface Group {
-  groupId: number
+  groupId: number | string
   name: string
   avatar: string
-  ownerId: number
+  ownerId: number | string
   ownerNickname: string
   notice: string
   memberCount: number
@@ -50,7 +50,7 @@ export interface Group {
 }
 
 export interface GroupMemberVO {
-  userId: number
+  userId: number | string
   nickname: string
   avatar: string
   role: number
@@ -58,9 +58,9 @@ export interface GroupMemberVO {
 }
 
 export interface Conversation {
-  id: number
+  id: number | string
   type: 'private' | 'group'
-  targetId: number
+  targetId: number | string
   name: string
   avatar: string
   lastMessage: string
@@ -69,9 +69,9 @@ export interface Conversation {
 }
 
 export interface Message {
-  id: number
-  conversationId: number
-  senderId: number
+  id: number | string
+  conversationId: number | string
+  senderId: number | string
   senderName: string
   senderAvatar: string
   type: 'text' | 'image' | 'file'
@@ -84,5 +84,5 @@ export interface Message {
 
 export interface CreateGroupForm {
   name: string
-  memberIds: number[]
+  memberIds: (number | string)[]
 }

@@ -7,24 +7,34 @@ const userStore = useUserStore()
 const chatStore = useChatStore()
 
 const inputText = ref('')
+const sending = ref(false)
+
+function getMyId() {
+  return localStorage.getItem('minichat_user_id') || ''
+}
 
 async function handleSend() {
   const text = inputText.value.trim()
-  if (!text || !userStore.currentUser) return
-  await chatStore.sendMessage(
-    userStore.currentUser.id,
-    userStore.currentUser.nickname,
-    userStore.currentUser.avatar,
-    'text',
-    text,
-  )
-  inputText.value = ''
+  if (!text || !userStore.currentUser || sending.value) return
+  sending.value = true
+  try {
+    await chatStore.sendMessage(
+      getMyId(),
+      userStore.currentUser.nickname,
+      userStore.currentUser.avatar,
+      'text',
+      text,
+    )
+    inputText.value = ''
+  } finally {
+    sending.value = false
+  }
 }
 
 function handleImageUpload() {
   if (!userStore.currentUser) return
   chatStore.sendMessage(
-    userStore.currentUser.id,
+    getMyId(),
     userStore.currentUser.nickname,
     userStore.currentUser.avatar,
     'image',
@@ -35,7 +45,7 @@ function handleImageUpload() {
 function handleFileUpload() {
   if (!userStore.currentUser) return
   chatStore.sendMessage(
-    userStore.currentUser.id,
+    getMyId(),
     userStore.currentUser.nickname,
     userStore.currentUser.avatar,
     'file',

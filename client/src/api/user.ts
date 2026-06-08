@@ -1,11 +1,11 @@
 import { get, put, post } from '@/utils/request'
 import type { User } from '@/types'
 
-export function getUser(id: number) {
+export function getUser(id: number | string) {
   return get<User>(`/user/${id}`)
 }
 
-export function updateUser(id: number, data: Partial<User>) {
+export function updateUser(id: number | string, data: Partial<User>) {
   return put<void>(`/user/${id}`, data)
 }
 

@@ -6,7 +6,18 @@ import * as userApi from '@/api/user'
 
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(null)
-  const token = ref('')
+  const token = ref(localStorage.getItem('minichat_token') || '')
+
+  async function init() {
+    if (!token.value || currentUser.value) return
+    const userId = localStorage.getItem('minichat_user_id')
+    if (!userId) return
+    try {
+      currentUser.value = await userApi.getUser(userId)
+    } catch {
+      logout()
+    }
+  }
 
   async function login(phone: string, password: string) {
     const jwt = await authApi.login(phone, password)
@@ -17,7 +28,7 @@ export const useUserStore = defineStore('user', () => {
       const payload = JSON.parse(atob(parts[1]!))
       const userId = String(payload.sub ?? '')
       localStorage.setItem('minichat_user_id', userId)
-      const user = await userApi.getUser(Number(userId))
+      const user = await userApi.getUser(userId)
       currentUser.value = user
     }
   }
@@ -48,5 +59,5 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('minichat_user_id')
   }
 
-  return { currentUser, token, login, register, logout, updateProfile, deleteAccount }
+  return { currentUser, token, init, login, register, logout, updateProfile, deleteAccount }
 })

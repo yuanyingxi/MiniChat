@@ -22,6 +22,12 @@ watch(
 function formatTime(time: string) {
   return new Date(time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
+
+function isMine(senderId: number | string | undefined) {
+  const myId = localStorage.getItem('minichat_user_id')
+  const s = String(senderId)
+  return s === '1' || (myId !== null && s === myId) || (!myId && userStore.currentUser && s === String(userStore.currentUser.id))
+}
 </script>
 
 <template>
@@ -35,11 +41,11 @@ function formatTime(time: string) {
           v-for="msg in chatStore.messages"
           :key="msg.id"
           class="msg-row"
-          :class="{ mine: msg.senderId === userStore.currentUser?.id }"
+          :class="{ mine: isMine(msg.senderId) }"
         >
-          <el-avatar v-if="msg.senderId !== userStore.currentUser?.id" :size="32" :src="msg.senderAvatar" />
+          <el-avatar v-if="!isMine(msg.senderId)" :size="32" :src="msg.senderAvatar" />
           <div class="msg-body">
-            <div v-if="msg.senderId !== userStore.currentUser?.id" class="msg-sender">
+            <div v-if="!isMine(msg.senderId)" class="msg-sender">
               {{ msg.senderName }}
             </div>
             <div class="msg-bubble">
@@ -57,7 +63,7 @@ function formatTime(time: string) {
             </div>
             <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>
           </div>
-          <el-avatar v-if="msg.senderId === userStore.currentUser?.id" :size="32" :src="msg.senderAvatar" />
+          <el-avatar v-if="isMine(msg.senderId)" :size="32" :src="msg.senderAvatar" />
         </div>
       </div>
       <MessageInput />
@@ -105,15 +111,18 @@ export default { components: { Document, ChatDotRound } }
 
 .msg-row {
   display: flex;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 16px;
 }
 .msg-row.mine {
-  flex-direction: row-reverse;
+  justify-content: flex-end;
 }
 
 .msg-body {
   max-width: 60%;
+  display: flex;
+  flex-direction: column;
 }
 
 .msg-sender {
