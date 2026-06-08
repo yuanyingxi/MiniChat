@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: minichat-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://minichat-user
+          predicates:
+            - Path=/auth/**,/user/**,/friend/**,/group/**,/file/**,/internal/**
+        - id: message-service
+          uri: lb://minichat-message
+          predicates:
+            - Path=/message/**,/conversation/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "http://localhost:5173"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+
+jwt:
+  secret: MiniChatSecretKey2026MustBeAtLeast256BitsLongForHMACSHA256!
+
+logging:
+  level:
+    com.minichat: debug
+    org.springframework.cloud.gateway: debug
