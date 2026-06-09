@@ -1,7 +1,7 @@
-package com.minichat;
+package com.minichat.message;
 
-import com.minichat.entity.Message;
-import com.minichat.mapper.MessageMapper;
+import com.minichat.message.entity.Message;
+import com.minichat.message.mapper.MessageMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.Test;

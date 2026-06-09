@@ -1,8 +1,8 @@
-package com.minichat.websocket;
+package com.minichat.message.websocket;
 
-import com.minichat.dto.SendMessageReq;
-import com.minichat.dto.WsMessage;
-import com.minichat.service.MessageService;
+import com.minichat.message.dto.SendMessageReq;
+import com.minichat.message.dto.WsMessage;
+import com.minichat.message.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,20 +28,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
 
-        // 获取用户Id
-        Long userId =
-                Long.parseLong(
-                        session.getUri()
-                                .getQuery()
-                                .split("=")[1]
-                );
+        Long userId = (Long) session.getAttributes().get("userId");
 
-        session.getAttributes().put(
-                "userId",
-                userId
-        );
+        // 如果用户已在线则踢掉旧连接
+        if (sessionManager.isOnline(userId)) {
+            sessionManager.removeSession(userId);
+        }
 
-        // 用户上线
         sessionManager.addSession(userId, session);
         System.out.println("用户上线：" + userId);
         System.out.println("当前在线人数：" + sessionManager.onlineCount());

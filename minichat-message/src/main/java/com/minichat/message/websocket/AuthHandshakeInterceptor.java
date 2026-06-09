@@ -1,0 +1,63 @@
+package com.minichat.message.websocket;
+
+import cn.hutool.jwt.Claims;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTUtil;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
+
+import javax.crypto.SecretKey;
+import java.util.Map;
+
+// 握手拦截器
+@Component
+public class AuthHandshakeInterceptor implements HandshakeInterceptor {
+
+    private static final String SECRET = "MiniChatSecretKey2026MustBeAtLeast256BitsLongForHMACSHA256!";
+
+    /**
+     * 握手前调用：验证身份，决定是否允许连接
+     * return true  → 继续握手
+     * return false → 拒绝连接（前端收到 1006）
+     */
+    @Override
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+
+//        // 从 Header 取 token
+//        String token = ((ServletServerHttpRequest) request).getServletRequest().getHeader("Authorization");
+//        if (token == null || !token.startsWith("Bearer ")) return false;
+
+        // 从 URL 参数取 token
+        String query = request.getURI().getQuery();  // token=xxx
+        if (query == null || !query.startsWith("token=")) return false;
+        String token = query.substring(6);
+
+        try {
+
+            JWT jwt = JWTUtil.parseToken(token);
+
+            // 验证token
+            jwt.setKey(SECRET.getBytes());
+            if (!jwt.validate(0)) {
+                System.out.println("签名验证失败或 token 过期");
+                return false;
+            }
+
+            // 取userId
+            Long userId = (Long) jwt.getPayload("sub");
+            attributes.put("userId", userId);
+            return true;
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {
+    }
+}

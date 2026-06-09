@@ -1,7 +1,7 @@
-package com.minichat.mapper;
+package com.minichat.message.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.minichat.entity.Message;
+import com.minichat.message.entity.Message;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

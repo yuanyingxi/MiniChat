@@ -1,9 +1,7 @@
-package com.minichat.service;
+package com.minichat.message.service;
 
-import com.minichat.dto.SendMessageReq;
-import com.minichat.entity.Message;
-import com.minichat.vo.MessageVO;
-import org.springframework.web.bind.annotation.RequestParam;
+import com.minichat.message.dto.SendMessageReq;
+import com.minichat.message.dto.MessageVO;
 
 import java.util.List;
 

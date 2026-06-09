@@ -1,4 +1,15 @@
+server:
+  port: 8082
+
 spring:
+  application:
+    name: minichat-message
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+
   datasource:
     url: jdbc:mysql://localhost:3307/minichat_db
     username: root

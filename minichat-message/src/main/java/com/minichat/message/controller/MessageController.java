@@ -1,9 +1,7 @@
-package com.minichat.controller;
+package com.minichat.message.controller;
 
-import com.minichat.dto.SendMessageReq;
-import com.minichat.entity.Message;
-import com.minichat.service.MessageService;
-import com.minichat.vo.MessageVO;
+import com.minichat.message.service.MessageService;
+import com.minichat.message.dto.MessageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

@@ -1,4 +1,4 @@
-package com.minichat.entity;
+package com.minichat.message.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;

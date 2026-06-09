@@ -1,4 +1,4 @@
-package com.minichat.websocket;
+package com.minichat.message.websocket;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
@@ -35,11 +35,9 @@ public class SessionManager {
         }
     }
 
-    public void removeSession(
-            WebSocketSession session) {
+    public void removeSession(WebSocketSession session) {
 
-        Long userId =
-                SESSION_USER_MAP.remove(session);
+        Long userId = SESSION_USER_MAP.remove(session);
 
         if (userId != null) {
             ONLINE_USERS.remove(userId);

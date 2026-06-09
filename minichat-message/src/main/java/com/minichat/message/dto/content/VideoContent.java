@@ -1,14 +1,19 @@
-package com.minichat.dto.content;
+package com.minichat.message.dto.content;
 
 import lombok.Data;
 
 @Data
-public class VoiceContent {
+public class VideoContent {
 
     /**
-     * 语音地址
+     * 视频地址
      */
     private String url;
+
+    /**
+     * 封面图
+     */
+    private String coverUrl;
 
     /**
      * 时长(秒)

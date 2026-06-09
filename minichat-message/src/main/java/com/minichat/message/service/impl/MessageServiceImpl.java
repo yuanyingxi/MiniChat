@@ -1,27 +1,28 @@
-package com.minichat.service.impl;
+package com.minichat.message.service.impl;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.minichat.dto.content.ImageContent;
-import com.minichat.dto.content.VideoContent;
-import com.minichat.dto.content.VoiceContent;
-import com.minichat.dto.AckMessage;
-import com.minichat.dto.SendMessageReq;
-import com.minichat.dto.WsMessage;
-import com.minichat.entity.GroupMember;
-import com.minichat.entity.Message;
-import com.minichat.mapper.GroupMemberMapper;
-import com.minichat.mapper.MessageMapper;
-import com.minichat.dto.content.TextContent;
-import com.minichat.service.MessageService;
-import com.minichat.vo.MessageVO;
-import com.minichat.websocket.SessionManager;
+import com.minichat.message.dto.AckMessage;
+import com.minichat.message.dto.MessageVO;
+import com.minichat.message.dto.SendMessageReq;
+import com.minichat.message.dto.WsMessage;
+import com.minichat.message.dto.content.ImageContent;
+import com.minichat.message.dto.content.VideoContent;
+import com.minichat.message.dto.content.VoiceContent;
+import com.minichat.message.entity.Message;
+import com.minichat.message.mapper.MessageMapper;
+import com.minichat.message.dto.content.TextContent;
+import com.minichat.message.service.MessageService;
+import com.minichat.message.websocket.SessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import cn.hutool.core.util.IdUtil;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,8 +31,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
+    @Autowired
+    private RestTemplate restTemplate;
+
     private final MessageMapper messageMapper;
-    private final GroupMemberMapper groupMemberMapper;
 
     private final SessionManager sessionManager;
 
@@ -193,34 +196,35 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private void sendGroupMessage(Message message) {
+        String url = "http://minichat-user/group/" + message.getToId() + "/members";
 
-        // 查询群成员
-        List<Long> memberIds = groupMemberMapper.selectList(
-                                Wrappers.<GroupMember>lambdaQuery()
-                                        .eq(GroupMember::getGroupId, message.getToId())
-                        )
-                        .stream()
-                        .map(GroupMember::getUserId)
-                        .filter(
-                                id -> !id.equals(
-                                        message.getFromId()
-                                )
-                        )
-                        .toList();
+        String responseBody = restTemplate.getForObject(url, String.class);
+        if (responseBody == null) {
+            System.out.println("获取群成员列表失败 - responseBody");
+            return;
+        }
 
-        // 根据在线情况选择推送
+        // 用 Hutool 解析 JSON
+        JSONObject json = JSONUtil.parseObj(responseBody);
+        if (json.getInt("code") != 200) {
+            System.out.println("获取群成员列表失败 - json");
+            return;
+        }
+
+        // 提取成员ID列表
+        JSONArray dataArray = json.getJSONArray("data");
+        List<Long> memberIds = dataArray.stream()
+                .map(obj -> ((JSONObject) obj).getLong("userId"))
+                .filter(id -> !id.equals(message.getFromId()))
+                .toList();
+
+        // 推送消息
         MessageVO vo = convertToVO(message);
-
         String payload = JSONUtil.toJsonStr(vo);
 
         for (Long userId : memberIds) {
-
             if (sessionManager.isOnline(userId)) {
-
-                sessionManager.sendToUser(
-                        userId,
-                        payload
-                );
+                sessionManager.sendToUser(userId, payload);
             }
         }
     }

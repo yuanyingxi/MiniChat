@@ -1,4 +1,4 @@
-package com.minichat.vo;
+package com.minichat.message.dto;
 
 import lombok.Data;
 
