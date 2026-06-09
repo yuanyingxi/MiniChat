@@ -16,8 +16,18 @@ public class MessageController {
 
     private final MessageService messageService;
 
-    @GetMapping("/history")
-    public List<MessageVO> history(@RequestParam("conversationId") Long conversationId) {
-        return messageService.getHistory(conversationId);
+    @GetMapping("/history/all")
+    public List<MessageVO> getAllHistory() {
+        return messageService.getAllHistory();
+    }
+
+    @GetMapping("/history/private")
+    public List<MessageVO> getPrivateHistory(@RequestParam Long targetId) {
+        return messageService.getPrivateHistory(targetId);
+    }
+
+    @GetMapping("/history/group")
+    public List<MessageVO> getGroupHistory(@RequestParam Long targetId) {
+        return messageService.getGroupHistory(targetId);
     }
 }

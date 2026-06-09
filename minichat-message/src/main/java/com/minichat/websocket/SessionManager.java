@@ -10,16 +10,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class SessionManager {
 
-    private static final Map<Long, WebSocketSession>
-            ONLINE_USERS = new ConcurrentHashMap<>();
-    private static final Map<WebSocketSession, Long>
-            SESSION_USER_MAP = new ConcurrentHashMap<>();
+    private static final Map<Long, WebSocketSession> ONLINE_USERS = new ConcurrentHashMap<>();
+    private static final Map<WebSocketSession, Long> SESSION_USER_MAP = new ConcurrentHashMap<>();
 
     /**
      * 用户上线
      */
-    public void addSession(Long userId,
-                           WebSocketSession session) {
+    public void addSession(Long userId, WebSocketSession session) {
 
         ONLINE_USERS.put(userId, session);
         SESSION_USER_MAP.put(session, userId);
@@ -68,19 +65,14 @@ public class SessionManager {
     /**
      * 给指定用户发消息
      */
-    public void sendToUser(
-            Long userId,
-            String payload
-    ) {
+    public void sendToUser(Long userId, String payload) {
 
         WebSocketSession session = ONLINE_USERS.get(userId);
         if (session == null) return;
 
         try {
-
             session.sendMessage(new TextMessage(payload));
         } catch (Exception e) {
-
             e.printStackTrace();
         }
     }

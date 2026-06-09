@@ -5,6 +5,5 @@ import com.minichat.entity.Message;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface MessageMapper
-        extends BaseMapper<Message> {
+public interface MessageMapper extends BaseMapper<Message> {
 }

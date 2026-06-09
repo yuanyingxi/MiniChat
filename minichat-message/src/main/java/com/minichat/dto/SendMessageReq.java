@@ -9,7 +9,7 @@ public class SendMessageReq {
 
     private Long toId;
 
-    private Integer messageType;// 消息类型：文本、图片、视频、语音...
+    private Integer messageType;// 消息类型：文本、图片(url)、视频(url)...
 
     private String content;
 }
