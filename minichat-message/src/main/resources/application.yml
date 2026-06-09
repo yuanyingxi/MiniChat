@@ -25,3 +25,11 @@ spring:
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+aliyun:
+  oss:
+    region: cn-guangzhou
+    bucketName: minichat-guangzhou-123
+    access-key-id: key-id
+    access-key-secret: key-secret
+    endpoint: https://oss-cn-guangzhou.aliyuncs.com
