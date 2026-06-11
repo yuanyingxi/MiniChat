@@ -33,3 +33,8 @@ aliyun:
     access-key-id: key-id
     access-key-secret: key-secret
     endpoint: https://oss-cn-guangzhou.aliyuncs.com
+
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: message-producer-group

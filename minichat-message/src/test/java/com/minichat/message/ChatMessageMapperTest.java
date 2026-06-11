@@ -1,13 +1,13 @@
 package com.minichat.message;
 
-import com.minichat.message.entity.Message;
+import com.minichat.message.entity.ChatMessage;
 import com.minichat.message.mapper.MessageMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.junit.jupiter.api.Test;
 
 @SpringBootTest
-public class MessageMapperTest {
+public class ChatMessageMapperTest {
 
     @Autowired
     private MessageMapper messageMapper;
@@ -15,16 +15,16 @@ public class MessageMapperTest {
     @Test
     public void testInsert() {
 
-        Message message = new Message();
+        ChatMessage chatMessage = new ChatMessage();
 
-        message.setId(2L);
-        message.setChatType(1);
-        message.setFromId(1001L);
-        message.setToId(1002L);
-        message.setMessageType(1);
-        message.setContent("{\"text\":\"hello\"}");
+        chatMessage.setId(2L);
+        chatMessage.setChatType(1);
+        chatMessage.setFromId(1001L);
+        chatMessage.setToId(1002L);
+        chatMessage.setMessageType(1);
+        chatMessage.setContent("{\"text\":\"hello\"}");
 
-        int rows = messageMapper.insert(message);
+        int rows = messageMapper.insert(chatMessage);
 
         System.out.println("插入行数：" + rows);
     }
@@ -32,20 +32,20 @@ public class MessageMapperTest {
     @Test
     public void testSelectById() {
 
-        Message message = messageMapper.selectById(2L);
+        ChatMessage chatMessage = messageMapper.selectById(2L);
 
-        System.out.println(message);
+        System.out.println(chatMessage);
     }
 
     @Test
     public void testUpdateById() {
 
-        Message message = new Message();
+        ChatMessage chatMessage = new ChatMessage();
 
-        message.setId(2L);
-        message.setContent("{\"text\":\"hello update\"}");
+        chatMessage.setId(2L);
+        chatMessage.setContent("{\"text\":\"hello update\"}");
 
-        int rows = messageMapper.updateById(message);
+        int rows = messageMapper.updateById(chatMessage);
 
         System.out.println("更新行数：" + rows);
     }

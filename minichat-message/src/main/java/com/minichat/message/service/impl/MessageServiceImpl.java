@@ -4,19 +4,17 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.minichat.message.dto.AckMessage;
-import com.minichat.message.dto.MessageVO;
-import com.minichat.message.dto.SendMessageReq;
-import com.minichat.message.dto.WsMessage;
+import com.minichat.message.dto.*;
 import com.minichat.message.dto.content.ImageContent;
 import com.minichat.message.dto.content.VideoContent;
 import com.minichat.message.dto.content.VoiceContent;
-import com.minichat.message.entity.Message;
+import com.minichat.message.entity.ChatMessage;
 import com.minichat.message.mapper.MessageMapper;
 import com.minichat.message.dto.content.TextContent;
 import com.minichat.message.service.MessageService;
 import com.minichat.message.websocket.SessionManager;
 import lombok.RequiredArgsConstructor;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,8 +29,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
-    @Autowired
-    private RestTemplate restTemplate;
+
+
+    private final RocketMQTemplate rocketMQTemplate;
 
     private final MessageMapper messageMapper;
 
@@ -41,8 +40,17 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageVO> getAllHistory() {
 
+        rocketMQTemplate.convertAndSend(
+                "history-read",
+                new HistoryReadEvent(
+                        3,
+                        null,
+                        null
+                )
+        );
+
         return messageMapper.selectList(
-                        new QueryWrapper<Message>()
+                        new QueryWrapper<ChatMessage>()
                                 .orderByAsc("create_time")
                 )
                 .stream()
@@ -53,10 +61,19 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageVO> getPrivateHistory(Long targetId) {
 
-        Long userId = 123L;
+        Long userId = 1001L;
+
+        rocketMQTemplate.convertAndSend(
+                "history-read",
+                new HistoryReadEvent(
+                        1,
+                        userId,
+                        targetId
+                )
+        );
 
         return messageMapper.selectList(
-                        new QueryWrapper<Message>()
+                        new QueryWrapper<ChatMessage>()
                                 .nested(w -> w
                                         .eq("from_id", userId)
                                         .eq("to_id", targetId)
@@ -74,8 +91,19 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageVO> getGroupHistory(Long groupId) {
 
+        Long userId = 1001L;
+
+        rocketMQTemplate.convertAndSend(
+                "history-read",
+                new HistoryReadEvent(
+                        2,
+                        userId,
+                        groupId
+                )
+        );
+
         return messageMapper.selectList(
-                    new QueryWrapper<Message>()
+                    new QueryWrapper<ChatMessage>()
                             .eq("chat_type", 2)
                             .eq("to_id", groupId)
                             .orderByAsc("create_time")
@@ -85,19 +113,36 @@ public class MessageServiceImpl implements MessageService {
                 .toList();
     }
 
+    private MessageVO convertToVO(ChatMessage chatMessage) {
+
+        MessageVO vo = new MessageVO();
+
+        vo.setId(chatMessage.getId());
+        vo.setFromId(chatMessage.getFromId());
+        vo.setToId(chatMessage.getToId());
+        vo.setMessageType(chatMessage.getMessageType());
+
+        vo.setContent(
+                JSONUtil.parseObj(chatMessage.getContent())
+        );
+
+        vo.setCreateTime(chatMessage.getCreateTime());
+
+        return vo;
+    }
+
     @Transactional
     @Override
     public Long sendMessage(SendMessageReq req, Long fromId) {
 
         // 构建消息
-        Message message = buildMessage(req, fromId);
-        Integer chatType = req.getChatType();
+        ChatMessage chatMessage = buildMessage(req, fromId);
 
         // 消息入库并返回ACK
-        messageMapper.insert(message);
+        messageMapper.insert(chatMessage);
 
         AckMessage ack = new AckMessage();
-        ack.setMessageId(message.getId());
+        ack.setMessageId(chatMessage.getId());
 
         WsMessage wsMessage = new WsMessage();
         wsMessage.setType(2);
@@ -106,34 +151,30 @@ public class MessageServiceImpl implements MessageService {
         );
 
         sessionManager.sendToUser(
-                message.getFromId(),
+                chatMessage.getFromId(),
                 JSONUtil.toJsonStr(wsMessage)
         );
 
-        // 私发 or 群发
-        if (chatType == 1) {
-            sendPrivateMessage(message);
-        }
-        else if (chatType == 2) {
-            sendGroupMessage(message);
-        }
-        else {
-            throw new RuntimeException("请选择私发或群发");
-        }
+        //
+        rocketMQTemplate.convertAndSend(
+                "chat-message",
+                chatMessage
+        );
 
-        return message.getId();
+        return chatMessage.getId();
     }
 
-    private Message buildMessage(SendMessageReq req, Long fromId) {
+    private ChatMessage buildMessage(SendMessageReq req, Long fromId) {
 
-        Message message = new Message();
+        ChatMessage chatMessage = new ChatMessage();
 
-        BeanUtils.copyProperties(req, message);
+        BeanUtils.copyProperties(req, chatMessage);
 
-        message.setId(IdUtil.getSnowflakeNextId());
-        message.setFromId(fromId);
-        message.setStatus(1);
-        message.setCreateTime(LocalDateTime.now());
+        chatMessage.setId(IdUtil.getSnowflakeNextId());
+        chatMessage.setFromId(fromId);
+        chatMessage.setStatus(1);
+        chatMessage.setCreateTime(LocalDateTime.now());
+        chatMessage.setUpdateTime(LocalDateTime.now());
 
         switch (req.getMessageType()) {
 
@@ -142,7 +183,7 @@ public class MessageServiceImpl implements MessageService {
                 TextContent content = new TextContent();
                 content.setText(req.getContent());
 
-                message.setContent(JSONUtil.toJsonStr(content));
+                chatMessage.setContent(JSONUtil.toJsonStr(content));
             }
 
             case 2 -> {
@@ -150,7 +191,7 @@ public class MessageServiceImpl implements MessageService {
                 ImageContent content = new ImageContent();
                 content.setUrl(req.getContent());
 
-                message.setContent(JSONUtil.toJsonStr(content));
+                chatMessage.setContent(JSONUtil.toJsonStr(content));
             }
 
             case 3 -> {
@@ -158,7 +199,7 @@ public class MessageServiceImpl implements MessageService {
                 VideoContent content = new VideoContent();
                 content.setUrl(req.getContent());
 
-                message.setContent(JSONUtil.toJsonStr(content));
+                chatMessage.setContent(JSONUtil.toJsonStr(content));
             }
 
             case 4 -> {
@@ -166,86 +207,20 @@ public class MessageServiceImpl implements MessageService {
                 VoiceContent content = new VoiceContent();
                 content.setUrl(req.getContent());
 
-                message.setContent(JSONUtil.toJsonStr(content));
+                chatMessage.setContent(JSONUtil.toJsonStr(content));
             }
 
             default -> throw new RuntimeException("暂不支持的消息类型");
         }
 
-        return message;
+        return chatMessage;
     }
 
-    private void sendPrivateMessage(Message message) {
 
-        // 根据在线情况选择推送
-        Long toId = message.getToId();
-        boolean isOnline = sessionManager.isOnline(toId);
 
-        System.out.println("toId=" + toId + ", online=" + isOnline);
 
-        if (isOnline) {
 
-            MessageVO vo = convertToVO(message);
-            String payload = JSONUtil.toJsonStr(vo);
 
-            sessionManager.sendToUser(
-                    toId,
-                    payload
-            );
-        }
-    }
-
-    private void sendGroupMessage(Message message) {
-        String url = "http://minichat-user/group/" + message.getToId() + "/members";
-
-        String responseBody = restTemplate.getForObject(url, String.class);
-        if (responseBody == null) {
-            System.out.println("获取群成员列表失败 - responseBody");
-            return;
-        }
-
-        // 用 Hutool 解析 JSON
-        JSONObject json = JSONUtil.parseObj(responseBody);
-        if (json.getInt("code") != 200) {
-            System.out.println("获取群成员列表失败 - json");
-            return;
-        }
-
-        // 提取成员ID列表
-        JSONArray dataArray = json.getJSONArray("data");
-        List<Long> memberIds = dataArray.stream()
-                .map(obj -> ((JSONObject) obj).getLong("userId"))
-                .filter(id -> !id.equals(message.getFromId()))
-                .toList();
-
-        // 推送消息
-        MessageVO vo = convertToVO(message);
-        String payload = JSONUtil.toJsonStr(vo);
-
-        for (Long userId : memberIds) {
-            if (sessionManager.isOnline(userId)) {
-                sessionManager.sendToUser(userId, payload);
-            }
-        }
-    }
-
-    private MessageVO convertToVO(Message message) {
-
-        MessageVO vo = new MessageVO();
-
-        vo.setId(message.getId());
-        vo.setFromId(message.getFromId());
-        vo.setToId(message.getToId());
-        vo.setMessageType(message.getMessageType());
-
-        vo.setContent(
-                JSONUtil.parseObj(message.getContent())
-        );
-
-        vo.setCreateTime(message.getCreateTime());
-
-        return vo;
-    }
 
 //    private Conversation getOrCreateConversation(Long fromId, Integer conversationType, Long toId) {
 //

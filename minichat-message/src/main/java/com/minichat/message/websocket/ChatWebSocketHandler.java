@@ -13,9 +13,11 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
 import cn.hutool.json.JSONUtil;
+import org.springframework.web.util.UriComponentsBuilder;
 
 
 import java.io.IOException;
+import java.net.URI;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +30,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
 
-        Long userId = (Long) session.getAttributes().get("userId");
+//        Long userId = (Long) session.getAttributes().get("userId");
+
+        URI uri = session.getUri();
+
+        String userIdStr = UriComponentsBuilder
+                .fromUri(uri)
+                .build()
+                .getQueryParams()
+                .getFirst("userId");
+
+        Long userId = Long.valueOf(userIdStr);
+
+        session.getAttributes().put("userId", userId);
 
         // 如果用户已在线则踢掉旧连接
         if (sessionManager.isOnline(userId)) {
@@ -69,27 +83,4 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 break;
         }
     }
-
-//    private void handleAck(
-//            WebSocketSession session,
-//            JSONObject json
-//    ) {
-//
-//        Long messageId = json.getLong("messageId");
-//
-//        if (messageId == null) return;
-//
-//        Long userId =
-//                (Long) session.getAttributes()
-//                        .get("userId");
-//
-//        messageMapper.update(
-//                null,
-//                Wrappers.<Message>lambdaUpdate()
-//                        .eq(Message::getId, messageId)
-//                        .set(Message::getStatus, 2)
-//        );
-//
-//        System.out.println("[ACK] messageId=" + messageId + ", userId=" + userId);
-//    }
 }

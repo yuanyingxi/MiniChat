@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @TableName("tb_message")
-public class Message {
+public class ChatMessage {
 
     @TableId
     private Long id;
@@ -28,6 +28,8 @@ public class Message {
     private Long clientSendTime;
 
     private String content;
+
+    private LocalDateTime updateTime;
 
     private LocalDateTime createTime;
 }

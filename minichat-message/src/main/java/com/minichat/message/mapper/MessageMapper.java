@@ -1,9 +1,9 @@
 package com.minichat.message.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.minichat.message.entity.Message;
+import com.minichat.message.entity.ChatMessage;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface MessageMapper extends BaseMapper<Message> {
+public interface MessageMapper extends BaseMapper<ChatMessage> {
 }
