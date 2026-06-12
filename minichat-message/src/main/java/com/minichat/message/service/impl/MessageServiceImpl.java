@@ -29,8 +29,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
-
-
     private final RocketMQTemplate rocketMQTemplate;
 
     private final MessageMapper messageMapper;
@@ -61,6 +59,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageVO> getPrivateHistory(Long targetId) {
 
+        //TODO:111111111111
         Long userId = 1001L;
 
         rocketMQTemplate.convertAndSend(
@@ -91,6 +90,7 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<MessageVO> getGroupHistory(Long groupId) {
 
+        //TODO:111111111111
         Long userId = 1001L;
 
         rocketMQTemplate.convertAndSend(

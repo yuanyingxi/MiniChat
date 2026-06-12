@@ -20,12 +20,12 @@ public class MessageController {
     }
 
     @GetMapping("/history/private")
-    public List<MessageVO> getPrivateHistory(@RequestParam Long targetId) {
+    public List<MessageVO> getPrivateHistory(@RequestParam("targetId") Long targetId) {
         return messageService.getPrivateHistory(targetId);
     }
 
     @GetMapping("/history/group")
-    public List<MessageVO> getGroupHistory(@RequestParam Long targetId) {
+    public List<MessageVO> getGroupHistory(@RequestParam("targetId") Long targetId) {
         return messageService.getGroupHistory(targetId);
     }
 }
