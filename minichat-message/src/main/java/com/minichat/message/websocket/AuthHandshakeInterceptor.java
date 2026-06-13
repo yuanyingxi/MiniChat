@@ -24,7 +24,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
      * return false → 拒绝连接（前端收到 1006）
      */
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+    public boolean beforeHandshake(
+            ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Map<String, Object> attributes) {
 
 //        // 从 Header 取 token
 //        String token = ((ServletServerHttpRequest) request).getServletRequest().getHeader("Authorization");
@@ -61,7 +65,12 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 //            return false;
 //        }
 
+        // 网关透传过来的 userId
+        String userId = request.getHeaders().getFirst("userId");
+        attributes.put("userId", userId);
         return true;
+
+//        return true;
     }
 
     @Override

@@ -57,10 +57,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<MessageVO> getPrivateHistory(Long targetId) {
-
-        //TODO:111111111111
-        Long userId = 1001L;
+    public List<MessageVO> getPrivateHistory(Long userId, Long targetId) {
 
         rocketMQTemplate.convertAndSend(
                 "history-read",
@@ -88,10 +85,7 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<MessageVO> getGroupHistory(Long groupId) {
-
-        //TODO:111111111111
-        Long userId = 1001L;
+    public List<MessageVO> getGroupHistory(Long userId, Long groupId) {
 
         rocketMQTemplate.convertAndSend(
                 "history-read",

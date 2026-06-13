@@ -30,19 +30,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws IOException {
 
-//        Long userId = (Long) session.getAttributes().get("userId");
+        Long userId = (Long) session.getAttributes().get("userId");
 
-        URI uri = session.getUri();
-
-        String userIdStr = UriComponentsBuilder
-                .fromUri(uri)
-                .build()
-                .getQueryParams()
-                .getFirst("userId");
-
-        Long userId = Long.valueOf(userIdStr);
-
-        session.getAttributes().put("userId", userId);
+//        URI uri = session.getUri();
+//
+//        String userIdStr = UriComponentsBuilder
+//                .fromUri(uri)
+//                .build()
+//                .getQueryParams()
+//                .getFirst("userId");
+//
+//        Long userId = Long.valueOf(userIdStr);
+//
+//        session.getAttributes().put("userId", userId);
 
         // 如果用户已在线则踢掉旧连接
         if (sessionManager.isOnline(userId)) {

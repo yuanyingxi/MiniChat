@@ -3,6 +3,7 @@ package com.minichat.message.controller;
 import com.minichat.message.service.MessageService;
 import com.minichat.message.dto.MessageVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageController {
 
+    @Autowired
     private final MessageService messageService;
 
     @GetMapping("/history/all")
@@ -20,12 +22,12 @@ public class MessageController {
     }
 
     @GetMapping("/history/private")
-    public List<MessageVO> getPrivateHistory(@RequestParam("targetId") Long targetId) {
-        return messageService.getPrivateHistory(targetId);
+    public List<MessageVO> getPrivateHistory(@RequestHeader("userId") Long userId, @RequestParam("targetId") Long targetId) {
+        return messageService.getPrivateHistory(userId, targetId);
     }
 
     @GetMapping("/history/group")
-    public List<MessageVO> getGroupHistory(@RequestParam("targetId") Long targetId) {
-        return messageService.getGroupHistory(targetId);
+    public List<MessageVO> getGroupHistory(@RequestHeader("userId") Long userId, @RequestParam("targetId") Long targetId) {
+        return messageService.getGroupHistory(userId, targetId);
     }
 }

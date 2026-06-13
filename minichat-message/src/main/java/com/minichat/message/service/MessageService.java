@@ -10,6 +10,6 @@ public interface MessageService {
     Long sendMessage(SendMessageReq req, Long fromId);
 
     List<MessageVO> getAllHistory();
-    List<MessageVO> getPrivateHistory(Long targetId);
-    List<MessageVO> getGroupHistory(Long targetId);
+    List<MessageVO> getPrivateHistory(Long userId, Long targetId);
+    List<MessageVO> getGroupHistory(Long userId, Long targetId);
 }
