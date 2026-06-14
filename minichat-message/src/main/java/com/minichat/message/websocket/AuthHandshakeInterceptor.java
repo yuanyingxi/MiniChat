@@ -65,23 +65,23 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 //            return false;
 //        }
 
-        // 从URL取userId
-        URI uri = request.getURI();
-
-        String userId = UriComponentsBuilder
-                .fromUri(uri)
-                .build()
-                .getQueryParams()
-                .getFirst("userId");
-
-        attributes.put("userId", Long.valueOf(userId));
-
-        return true;
-
-//        // 网关透传过来的 userId
-//        String userId = request.getHeaders().getFirst("userId");
-//        attributes.put("userId", userId);
+//        // 从URL取userId
+//        URI uri = request.getURI();
+//
+//        String userId = UriComponentsBuilder
+//                .fromUri(uri)
+//                .build()
+//                .getQueryParams()
+//                .getFirst("userId");
+//
+//        attributes.put("userId", Long.valueOf(userId));
+//
 //        return true;
+
+        // 网关透传过来的 userId
+        String userId = request.getHeaders().getFirst("userId");
+        attributes.put("userId", userId);
+        return true;
     }
 
     @Override
