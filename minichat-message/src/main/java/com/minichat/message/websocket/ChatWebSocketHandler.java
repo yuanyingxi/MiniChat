@@ -32,18 +32,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         Long userId = (Long) session.getAttributes().get("userId");
 
-//        URI uri = session.getUri();
-//
-//        String userIdStr = UriComponentsBuilder
-//                .fromUri(uri)
-//                .build()
-//                .getQueryParams()
-//                .getFirst("userId");
-//
-//        Long userId = Long.valueOf(userIdStr);
-//
-//        session.getAttributes().put("userId", userId);
-
         // 如果用户已在线则踢掉旧连接
         if (sessionManager.isOnline(userId)) {
             sessionManager.removeSession(userId);
@@ -65,18 +53,28 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         // 客户端通过 WebSocket 向服务器发送文本消息时触发
 
         String payload = message.getPayload();
+        Long userId = (Long) session.getAttributes().get("userId");
         System.out.println("收到消息: " + payload);
 
         WsMessage wsMessage = JSONUtil.toBean(payload, WsMessage.class);
 
         switch (wsMessage.getType()) {
 
-            case 1:
+            case 1:// 聊天消息
                 SendMessageReq req = wsMessage.getData().toBean(SendMessageReq.class);
 
-                Long userId = (Long) session.getAttributes().get("userId");
-
                 messageService.sendMessage(req, userId);
+                break;
+
+
+            case 2:// ACK
+
+                break;
+
+            case 3:// 心跳
+
+                sessionManager.refreshHeartbeat(userId);
+
                 break;
 
             default:

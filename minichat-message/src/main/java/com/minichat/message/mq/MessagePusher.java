@@ -3,6 +3,8 @@ package com.minichat.message.mq;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import com.minichat.message.dto.MessageVO;
 import com.minichat.message.entity.ChatMessage;
 import com.minichat.message.websocket.SessionManager;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RocketMQMessageListener(
@@ -27,42 +30,54 @@ public class MessagePusher implements RocketMQListener<ChatMessage> {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private RedissonClient redissonClient;
+
     @Override
     public void onMessage(ChatMessage message) {
+        // 分布式锁防止重复消费
+        // 使用消息ID作为分布式锁的key
+        String lockKey = "msg:push:" + message.getId();
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            // 尝试加锁，waitTime=0（不等待，立即失败），leaseTime=10秒（自动释放）
+            if (lock.tryLock(0, 10, TimeUnit.SECONDS)) {
 
-        System.out.println("收到消息，开始推送");
+                System.out.println("收到消息，开始推送，消息ID：" + message.getId());
+                // 私发 or 群发
+                if (message.getChatType() == 1) {
+                    sendPrivateMessage(message);
+                } else if (message.getChatType() == 2) {
+                    sendGroupMessage(message);
+                } else {
+                    throw new RuntimeException("消息类型并非私聊或群聊！");
+                }
 
-        // 私发 or 群发
-        if (message.getChatType() == 1) {
-            sendPrivateMessage(message);
+            } else {
+                // 获取锁失败，说明有其他实例正在处理该消息
+                System.out.println("消息 " + message.getId() + " 已被其他实例处理，当前实例跳过");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.err.println("获取锁被中断，消息ID：" + message.getId());
+        } finally {
+            // 释放锁（仅当当前线程持有锁时）
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
-        else if (message.getChatType() == 2) {
-            sendGroupMessage(message);
-        }
-        else {
-            throw new RuntimeException("消息类型并非私聊或群聊！");
-        }
-
     }
 
     private void sendPrivateMessage(ChatMessage chatMessage) {
 
-        // 根据在线情况选择推送
         Long toId = chatMessage.getToId();
-        boolean isOnline = sessionManager.isOnline(toId);
+        MessageVO vo = convertToVO(chatMessage);
+        String payload = JSONUtil.toJsonStr(vo);
 
-        System.out.println("toId=" + toId + ", online=" + isOnline);
-
-        if (isOnline) {
-
-            MessageVO vo = convertToVO(chatMessage);
-            String payload = JSONUtil.toJsonStr(vo);
-
-            sessionManager.sendToUser(
-                    toId,
-                    payload
-            );
-        }
+        sessionManager.sendToUser(
+                toId,
+                payload
+        );
     }
 
     private void sendGroupMessage(ChatMessage chatMessage) {
@@ -93,9 +108,7 @@ public class MessagePusher implements RocketMQListener<ChatMessage> {
         String payload = JSONUtil.toJsonStr(vo);
 
         for (Long userId : memberIds) {
-            if (sessionManager.isOnline(userId)) {
-                sessionManager.sendToUser(userId, payload);
-            }
+            sessionManager.sendToUser(userId, payload);
         }
     }
 
