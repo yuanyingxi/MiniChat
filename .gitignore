@@ -32,3 +32,6 @@ deploy/data/
 *.log
 **/logs/
 /logs/
+
+*docker*
+*sql*
