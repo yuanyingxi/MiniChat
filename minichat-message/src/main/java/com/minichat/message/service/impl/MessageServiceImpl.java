@@ -9,6 +9,7 @@ import com.minichat.message.dto.content.VoiceContent;
 import com.minichat.message.entity.ChatMessage;
 import com.minichat.message.mapper.MessageMapper;
 import com.minichat.message.dto.content.TextContent;
+import com.minichat.message.service.ClodDataArchiveService;
 import com.minichat.message.service.MessageService;
 import com.minichat.message.websocket.SessionManager;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +27,8 @@ import java.util.List;
 public class MessageServiceImpl implements MessageService {
 
     private final RocketMQTemplate rocketMQTemplate;
-
+    private final ClodDataArchiveService clodDataArchiveService;
     private final MessageMapper messageMapper;
-
     private final SessionManager sessionManager;
 
     @Override
@@ -38,6 +38,8 @@ public class MessageServiceImpl implements MessageService {
                 "history-read",
                 new HistoryReadEvent(
                         3,
+                        null,
+                        null,
                         null,
                         null
                 )
@@ -53,16 +55,32 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<MessageVO> getPrivateHistory(Long userId, Long targetId) {
+    public List<MessageVO> getPrivateHistory(Long userId, Long targetId, LocalDateTime startTime, LocalDateTime endTime) {
 
         rocketMQTemplate.convertAndSend(
                 "history-read",
                 new HistoryReadEvent(
                         1,
                         userId,
-                        targetId
+                        targetId,
+                        startTime,
+                        endTime
                 )
         );
+
+        List<MessageVO> result = queryPrivateHistory(userId, targetId, startTime, endTime);
+
+        if (result.isEmpty()) {
+
+            int restored = clodDataArchiveService.restoreByTimeRange(startTime, endTime);
+
+            if (restored > 0) result = queryPrivateHistory(userId, targetId, startTime, endTime);
+        }
+
+        return result;
+    }
+
+    private List<MessageVO> queryPrivateHistory(Long userId, Long targetId, LocalDateTime startTime, LocalDateTime endTime) {
 
         return messageMapper.selectList(
                         new QueryWrapper<ChatMessage>()
@@ -73,6 +91,8 @@ public class MessageServiceImpl implements MessageService {
                                         .eq("from_id", targetId)
                                         .eq("to_id", userId)
                                 )
+                                .ge(startTime != null, "create_time", startTime)
+                                .le(endTime != null, "create_time", endTime)
                                 .orderByAsc("create_time")
                 )
                 .stream()
@@ -81,22 +101,40 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
-    public List<MessageVO> getGroupHistory(Long userId, Long groupId) {
+    public List<MessageVO> getGroupHistory(Long userId, Long groupId, LocalDateTime startTime, LocalDateTime endTime) {
 
         rocketMQTemplate.convertAndSend(
                 "history-read",
                 new HistoryReadEvent(
                         2,
                         userId,
-                        groupId
+                        groupId,
+                        startTime,
+                        endTime
                 )
         );
 
+        List<MessageVO> result = queryGroupHistory(userId, groupId, startTime, endTime);
+
+        if (result.isEmpty()) {
+
+            int restored = clodDataArchiveService.restoreByTimeRange(startTime, endTime);
+
+            if (restored > 0) result = queryGroupHistory(userId, groupId, startTime, endTime);
+        }
+
+        return result;
+    }
+
+    private List<MessageVO> queryGroupHistory(Long userId, Long groupId, LocalDateTime startTime, LocalDateTime endTime) {
+
         return messageMapper.selectList(
-                    new QueryWrapper<ChatMessage>()
-                            .eq("chat_type", 2)
-                            .eq("to_id", groupId)
-                            .orderByAsc("create_time")
+                        new QueryWrapper<ChatMessage>()
+                                .eq("chat_type", 2)
+                                .eq("to_id", groupId)
+                                .ge(startTime != null, "create_time", startTime)
+                                .le(endTime != null, "create_time", endTime)
+                                .orderByAsc("create_time")
                 )
                 .stream()
                 .map(this::convertToVO)

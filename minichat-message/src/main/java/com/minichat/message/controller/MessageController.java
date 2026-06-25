@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -22,12 +23,18 @@ public class MessageController {
     }
 
     @GetMapping("/history/private")
-    public List<MessageVO> getPrivateHistory(@RequestHeader("userId") Long userId, @RequestParam("targetId") Long targetId) {
-        return messageService.getPrivateHistory(userId, targetId);
+    public List<MessageVO> getPrivateHistory(@RequestHeader("userId") Long userId,
+                                             @RequestParam("targetId") Long targetId,
+                                             @RequestParam("startTime") LocalDateTime startTime,
+                                             @RequestParam("endTime") LocalDateTime endTime) {
+        return messageService.getPrivateHistory(userId, targetId, startTime, endTime);
     }
 
     @GetMapping("/history/group")
-    public List<MessageVO> getGroupHistory(@RequestHeader("userId") Long userId, @RequestParam("targetId") Long targetId) {
-        return messageService.getGroupHistory(userId, targetId);
+    public List<MessageVO> getGroupHistory(@RequestHeader("userId") Long userId,
+                                           @RequestParam("targetId") Long targetId,
+                                           @RequestParam("startTime") LocalDateTime startTime,
+                                           @RequestParam("endTime") LocalDateTime endTime) {
+        return messageService.getGroupHistory(userId, targetId, startTime, endTime);
     }
 }

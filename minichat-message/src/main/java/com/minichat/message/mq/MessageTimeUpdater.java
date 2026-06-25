@@ -68,6 +68,8 @@ public class MessageTimeUpdater implements RocketMQListener<HistoryReadEvent> {
                                     .eq("from_id", event.getTargetId())
                                     .eq("to_id", event.getUserId())
                             )
+                            .ge(event.getStartTime() != null, "create_time", event.getStartTime())
+                            .le(event.getEndTime() != null, "create_time", event.getEndTime())
             );
         } else if (chatType == 2) {
             messageMapper.update(
@@ -76,6 +78,8 @@ public class MessageTimeUpdater implements RocketMQListener<HistoryReadEvent> {
                             .set("update_time", LocalDateTime.now())
                             .eq("chat_type", 2)
                             .eq("to_id", event.getTargetId())
+                            .ge(event.getStartTime() != null, "create_time", event.getStartTime())
+                            .le(event.getEndTime() != null, "create_time", event.getEndTime())
             );
         } else if (chatType == 3) {
             messageMapper.update(
