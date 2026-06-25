@@ -9,10 +9,13 @@ import com.minichat.message.dto.content.VoiceContent;
 import com.minichat.message.entity.ChatMessage;
 import com.minichat.message.mapper.MessageMapper;
 import com.minichat.message.dto.content.TextContent;
+import com.minichat.message.mq.ChatMessageSyncEvent;
 import com.minichat.message.service.ClodDataArchiveService;
 import com.minichat.message.service.MessageService;
 import com.minichat.message.websocket.SessionManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,7 @@ import cn.hutool.core.util.IdUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
@@ -30,6 +34,8 @@ public class MessageServiceImpl implements MessageService {
     private final ClodDataArchiveService clodDataArchiveService;
     private final MessageMapper messageMapper;
     private final SessionManager sessionManager;
+
+    private static final String TOPIC = "chat-sync-topic"; // 主题名
 
     @Override
     public List<MessageVO> getAllHistory() {
@@ -166,6 +172,7 @@ public class MessageServiceImpl implements MessageService {
         // 构建消息
         ChatMessage chatMessage = buildMessage(req, fromId);
 
+        // TODO
         // 消息入库并返回ACK
         messageMapper.insert(chatMessage);
 
@@ -189,6 +196,15 @@ public class MessageServiceImpl implements MessageService {
                 chatMessage
         );
 
+        // 使用MQ保证es的和数据库的数据同步
+        try {
+            ChatMessageSyncEvent event = buildEvent(chatMessage,"INSERT");
+            // 同步发送
+            SendResult sendResult = rocketMQTemplate.syncSend(TOPIC,event);
+            log.info("MQ 消息发送成功, ID: {}, 状态: {}", chatMessage.getId(), sendResult.getSendStatus());
+        }catch (Exception e){
+            log.error("MQ 消息发送失败, ID: {}, 错误: {}", chatMessage.getId(), e.getMessage());
+        }
         return chatMessage.getId();
     }
 
@@ -246,6 +262,25 @@ public class MessageServiceImpl implements MessageService {
 
 
 
+    /**
+     * 构建 MQ 消息体
+     */
+    private ChatMessageSyncEvent buildEvent(ChatMessage message, String operation) {
+        ChatMessageSyncEvent event = new ChatMessageSyncEvent();
+        event.setId(message.getId());
+        event.setConversationId(message.getConversationId());
+        event.setFromId(message.getFromId());
+        event.setToId(message.getToId());
+        event.setChatType(message.getChatType());
+        event.setMessageType(message.getMessageType());
+        event.setStatus(message.getStatus());
+        event.setClientSendTime(message.getClientSendTime());
+        event.setContent(message.getContent());
+        event.setCreateTime(message.getCreateTime().toString());
+        event.setUpdateTime(message.getUpdateTime().toString());
+        event.setOperation(operation);
+        return event;
+    }
 
 
 
