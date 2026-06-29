@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
+import * as userApi from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps<{ modelValue: boolean }>()
@@ -10,6 +11,7 @@ const userStore = useUserStore()
 
 const form = ref({ nickname: '', signature: '' })
 const passwordForm = ref({ oldPassword: '', newPassword: '' })
+const avatarUploading = ref(false)
 
 watch(() => props.modelValue, (val) => {
   if (val && userStore.currentUser) {
@@ -28,6 +30,29 @@ async function handleSaveProfile() {
     signature: form.value.signature,
   })
   ElMessage.success('个人信息已更新')
+}
+
+async function handleUploadAvatar() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    avatarUploading.value = true
+    try {
+      const url = await userApi.uploadAvatar(file)
+      if (userStore.currentUser) {
+        userStore.currentUser.avatar = url
+      }
+      ElMessage.success('头像已更新')
+    } catch {
+      ElMessage.error('头像上传失败')
+    } finally {
+      avatarUploading.value = false
+    }
+  }
+  input.click()
 }
 
 async function handleChangePassword() {
@@ -53,7 +78,12 @@ async function handleDeleteAccount() {
   <el-dialog :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" title="个人信息" width="440px">
     <el-form :model="form" label-width="80px">
       <el-form-item label="头像">
-        <el-avatar :size="56" :src="userStore.currentUser?.avatar" />
+        <div class="avatar-upload" @click="handleUploadAvatar" :class="{ uploading: avatarUploading }">
+          <el-avatar :size="56" :src="userStore.currentUser?.avatar" />
+          <div class="avatar-overlay" v-loading="avatarUploading">
+            <span>更换</span>
+          </div>
+        </div>
       </el-form-item>
       <el-form-item label="手机号">
         <el-input :model-value="userStore.currentUser?.phone" disabled />
@@ -93,5 +123,30 @@ async function handleDeleteAccount() {
 }
 :deep(.el-button--primary) {
   border-radius: var(--line-radius-pill);
+}
+.avatar-upload {
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.avatar-upload .avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 50%;
+}
+.avatar-upload:hover .avatar-overlay {
+  opacity: 1;
+}
+.avatar-upload.uploading {
+  pointer-events: none;
 }
 </style>

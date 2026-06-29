@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
+import type { Conversation } from '@/types'
 
 const chatStore = useChatStore()
 
 function formatTime(time: string) {
+  if (!time) return ''
   const d = new Date(time)
+  if (isNaN(d.getTime())) return ''
   const now = new Date()
   const diff = now.getTime() - d.getTime()
   if (diff < 86400000 && d.getDate() === now.getDate()) {
@@ -14,8 +17,18 @@ function formatTime(time: string) {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
-function selectConv(conv: any) {
+function convKey(conv: Conversation) {
+  return conv.type + '-' + conv.targetId
+}
+
+function selectConv(conv: Conversation) {
   chatStore.selectConversation(conv)
+}
+
+function isActive(conv: Conversation) {
+  const active = chatStore.activeConversation
+  if (!active) return false
+  return active.type === conv.type && String(active.targetId) === String(conv.targetId)
 }
 </script>
 
@@ -23,9 +36,9 @@ function selectConv(conv: any) {
   <div class="conversation-list">
     <div
       v-for="conv in chatStore.conversations"
-      :key="conv.id"
+      :key="convKey(conv)"
       class="conv-item"
-      :class="{ active: chatStore.activeConversation?.id === conv.id }"
+      :class="{ active: isActive(conv) }"
       @click="selectConv(conv)"
     >
       <el-avatar :size="40" :src="conv.avatar" />
@@ -78,7 +91,7 @@ function selectConv(conv: any) {
 }
 .conv-name {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--line-text-primary);
 }
 .conv-time {

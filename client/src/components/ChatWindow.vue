@@ -2,6 +2,7 @@
 import { ref, watch, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
+import { MessageType, type Message, type TextContent, type ImageContent, type FileContent } from '@/types'
 import MessageInput from './MessageInput.vue'
 
 const userStore = useUserStore()
@@ -20,13 +21,79 @@ watch(
 )
 
 function formatTime(time: string) {
-  return new Date(time).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  if (!time) return ''
+  const d = new Date(time)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
 function isMine(senderId: number | string | undefined) {
   const myId = localStorage.getItem('minichat_user_id')
   const s = String(senderId)
-  return s === '1' || (myId !== null && s === myId) || (!myId && userStore.currentUser && s === String(userStore.currentUser.id))
+  return (myId !== null && s === myId)
+}
+
+function getText(msg: Message): string {
+  const c = msg.content
+  if (typeof c === 'object' && 'text' in c) return (c as TextContent).text
+  return ''
+}
+
+function getImageUrl(msg: Message): string {
+  const c = msg.content
+  if (typeof c === 'object' && 'url' in c) return (c as ImageContent).url
+  return ''
+}
+
+function isFileAttachment(msg: Message): boolean {
+  const c = msg.content
+  if (typeof c !== 'object') return false
+  // 有 fileName 字段就是文件
+  if ('fileName' in c) return true
+  // 有 url 但不是图片后缀 → 文件
+  if ('url' in c) {
+    const u = (c as ImageContent).url
+    if (u && !/\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|#|$)/i.test(u)) return true
+  }
+  return false
+}
+
+function getFileNameFromUrl(msg: Message): string {
+  if (isFileAttachment(msg)) {
+    const c = msg.content
+    if (typeof c === 'object' && 'fileName' in c) return (c as FileContent).fileName
+    if (typeof c === 'object' && 'url' in c) {
+      const u = (c as ImageContent).url
+      const name = u.split('/').pop()?.split('?')[0]
+      return name || '文件'
+    }
+  }
+  return '文件'
+}
+
+function getFileName(msg: Message): string {
+  const c = msg.content
+  if (typeof c === 'object' && 'fileName' in c) return (c as FileContent).fileName
+  return '未知文件'
+}
+
+function getFileUrl(msg: Message): string {
+  const c = msg.content
+  if (typeof c === 'object' && 'url' in c) return (c as FileContent).url ?? ''
+  return ''
+}
+
+function openFile(msg: Message) {
+  window.open(getFileUrl(msg), '_blank')
+}
+
+function getAvatar(senderId: number | string): string {
+  const myId = localStorage.getItem('minichat_user_id')
+  if (String(senderId) === myId) {
+    return userStore.currentUser?.avatar || ''
+  }
+  const friend = chatStore.friends.find(f => String(f.friendId) === String(senderId))
+  return friend?.avatar || ''
 }
 </script>
 
@@ -41,29 +108,77 @@ function isMine(senderId: number | string | undefined) {
           v-for="msg in chatStore.messages"
           :key="msg.id"
           class="msg-row"
-          :class="{ mine: isMine(msg.senderId) }"
+          :class="{ mine: isMine(msg.fromId) }"
         >
-          <el-avatar v-if="!isMine(msg.senderId)" :size="32" :src="msg.senderAvatar" />
-          <div class="msg-body">
-            <div v-if="!isMine(msg.senderId)" class="msg-sender">
-              {{ msg.senderName }}
+          <div v-if="!isMine(msg.fromId)" class="msg-body">
+            <div class="msg-sender-avatar">
+              <el-avatar :size="32" :src="getAvatar(msg.fromId)" />
             </div>
-            <div class="msg-bubble">
-              <template v-if="msg.type === 'text'">{{ msg.content }}</template>
+            <div class="msg-bubble-wrapper">
+            <!-- 图片无气泡，可点击预览 -->
+            <!-- 文件附件（可点击下载） -->
+            <template v-if="isFileAttachment(msg)">
+              <div class="file-msg-bubble" @click="openFile(msg)">
+                <el-icon :size="28"><Document /></el-icon>
+                <span class="file-name">{{ getFileNameFromUrl(msg) }}</span>
+              </div>
+            </template>
+            <!-- 图片无气泡，可点击预览 -->
+            <template v-else-if="msg.messageType === MessageType.IMAGE">
               <el-image
-                v-else-if="msg.type === 'image'"
-                :src="msg.content"
+                :src="getImageUrl(msg)"
+                :preview-src-list="[getImageUrl(msg)]"
                 fit="cover"
                 class="msg-image"
               />
-              <div v-else-if="msg.type === 'file'" class="file-msg">
-                <el-icon><Document /></el-icon>
-                <span>{{ msg.fileName || msg.content }}</span>
+            </template>
+            <template v-else>
+            <div class="msg-bubble">
+              <template v-if="msg.messageType === MessageType.TEXT">{{ getText(msg) }}</template>
+              <div v-else-if="msg.messageType === MessageType.VIDEO" class="media-msg">
+                <el-icon><VideoCamera /></el-icon>
+                <span>视频消息</span>
               </div>
             </div>
-            <div class="msg-time">{{ formatTime(msg.createdAt) }}</div>
+            </template>
+            <div class="msg-time">{{ formatTime(msg.createTime) }}</div>
+            </div>
           </div>
-          <el-avatar v-if="isMine(msg.senderId)" :size="32" :src="msg.senderAvatar" />
+          <div v-else class="msg-body mine-body">
+            <div class="msg-bubble-wrapper">
+            <!-- 文件附件（可点击下载） -->
+            <template v-if="isFileAttachment(msg)">
+              <div class="file-msg-bubble" @click="openFile(msg)">
+                <el-icon :size="28"><Document /></el-icon>
+                <span class="file-name">{{ getFileNameFromUrl(msg) }}</span>
+              </div>
+            </template>
+            <!-- 图片无气泡，可点击预览 -->
+            <template v-else-if="msg.messageType === MessageType.IMAGE">
+              <el-image
+                :src="getImageUrl(msg)"
+                :preview-src-list="[getImageUrl(msg)]"
+                fit="cover"
+                class="msg-image"
+              />
+            </template>
+            <template v-else>
+            <div class="msg-bubble">
+              <template v-if="msg.messageType === MessageType.TEXT">{{ getText(msg) }}</template>
+              <div v-else class="file-msg">
+                <a :href="getFileUrl(msg)" target="_blank">
+                  <el-icon><Document /></el-icon>
+                  <span>{{ getFileName(msg) }}</span>
+                </a>
+              </div>
+            </div>
+            </template>
+            <div class="msg-time">{{ formatTime(msg.createTime) }}</div>
+            </div>
+            <div class="msg-sender-avatar">
+              <el-avatar :size="32" :src="getAvatar(msg.fromId)" />
+            </div>
+          </div>
         </div>
       </div>
       <MessageInput />
@@ -79,8 +194,8 @@ function isMine(senderId: number | string | undefined) {
 </template>
 
 <script lang="ts">
-import { Document, ChatDotRound } from '@element-plus/icons-vue'
-export default { components: { Document, ChatDotRound } }
+import { Document, ChatDotRound, VideoCamera } from '@element-plus/icons-vue'
+export default { components: { Document, ChatDotRound, VideoCamera } }
 </script>
 
 <style scoped>
@@ -109,20 +224,31 @@ export default { components: { Document, ChatDotRound } }
   padding: 20px 24px;
 }
 
-.msg-row {
+.msg-body {
   display: flex;
-  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 16px;
+  max-width: 70%;
 }
-.msg-row.mine {
+.msg-body.mine-body {
   justify-content: flex-end;
 }
 
-.msg-body {
-  max-width: 60%;
+.msg-sender-avatar {
+  flex-shrink: 0;
+}
+
+.msg-bubble-wrapper {
   display: flex;
   flex-direction: column;
+}
+
+.msg-row {
+  margin-bottom: 16px;
+}
+
+.msg-row.mine {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .msg-sender {
@@ -161,6 +287,25 @@ export default { components: { Document, ChatDotRound } }
 }
 .mine .msg-time {
   text-align: right;
+}
+
+.file-msg-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--line-bubble-received-bg);
+  border-radius: var(--line-radius-bubble);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.file-msg-bubble:hover {
+  filter: brightness(0.95);
+}
+.file-name {
+  font-size: 13px;
+  color: var(--line-text-primary);
+  word-break: break-all;
 }
 
 .file-msg {

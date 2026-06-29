@@ -1,63 +1,90 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
+import { MessageType } from '@/types'
+import * as msgApi from '@/api/message'
+import { ElMessage } from 'element-plus'
 
-const userStore = useUserStore()
 const chatStore = useChatStore()
 
 const inputText = ref('')
 const sending = ref(false)
+const uploading = ref(false)
 
-function getMyId() {
-  return localStorage.getItem('minichat_user_id') || ''
+function getChatType(): 1 | 2 {
+  const conv = chatStore.activeConversation
+  return conv?.type === 'group' ? 2 : 1
 }
+
+function getTargetId(): number | string {
+  return chatStore.activeConversation?.targetId ?? ''
+}
+
+// ── 文字 ──
 
 async function handleSend() {
   const text = inputText.value.trim()
-  if (!text || !userStore.currentUser || sending.value) return
+  if (!text || sending.value) return
   sending.value = true
   try {
-    await chatStore.sendMessage(
-      getMyId(),
-      userStore.currentUser.nickname,
-      userStore.currentUser.avatar,
-      'text',
-      text,
-    )
+    chatStore.sendMessage(getChatType(), getTargetId(), MessageType.TEXT, { text })
     inputText.value = ''
   } finally {
     sending.value = false
   }
 }
 
+// ── 图片 ──
+
 function handleImageUpload() {
-  if (!userStore.currentUser) return
-  chatStore.sendMessage(
-    getMyId(),
-    userStore.currentUser.nickname,
-    userStore.currentUser.avatar,
-    'image',
-    'https://picsum.photos/200/150?random=' + Date.now(),
-  )
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    uploading.value = true
+    try {
+      const res = await msgApi.uploadFile(file)
+      chatStore.sendMessage(getChatType(), getTargetId(), MessageType.IMAGE, { url: res.url })
+    } catch {
+      ElMessage.error('图片上传失败')
+    } finally {
+      uploading.value = false
+    }
+  }
+  input.click()
 }
 
+// ── 文件 ──
+
 function handleFileUpload() {
-  if (!userStore.currentUser) return
-  chatStore.sendMessage(
-    getMyId(),
-    userStore.currentUser.nickname,
-    userStore.currentUser.avatar,
-    'file',
-    'example-document.pdf',
-    '示例文档.pdf',
-  )
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    uploading.value = true
+    try {
+      const res = await msgApi.uploadFile(file)
+      chatStore.sendMessage(getChatType(), getTargetId(), MessageType.IMAGE, {
+        fileName: res.originalName || file.name,
+        url: res.url,
+        size: file.size,
+      })
+    } catch {
+      ElMessage.error('文件上传失败')
+    } finally {
+      uploading.value = false
+    }
+  }
+  input.click()
 }
 </script>
 
 <template>
   <div class="message-input">
-    <button class="attach-btn" @click="handleImageUpload" title="发送图片">
+    <button class="attach-btn" @click="handleImageUpload" title="发送图片" :disabled="uploading">
       <el-icon><Picture /></el-icon>
     </button>
     <el-input
@@ -66,7 +93,7 @@ function handleFileUpload() {
       @keyup.enter="handleSend"
       clearable
     />
-    <button class="attach-btn" @click="handleFileUpload" title="发送文件">
+    <button class="attach-btn" @click="handleFileUpload" title="发送文件" :disabled="uploading">
       <el-icon><FolderOpened /></el-icon>
     </button>
     <el-button type="primary" @click="handleSend" :disabled="!inputText.trim()" round>

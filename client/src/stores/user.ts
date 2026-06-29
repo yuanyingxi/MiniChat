@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { User } from '@/types'
 import * as authApi from '@/api/auth'
 import * as userApi from '@/api/user'
+import { useChatStore } from '@/stores/chat'
 
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(null)
@@ -14,6 +15,8 @@ export const useUserStore = defineStore('user', () => {
     if (!userId) return
     try {
       currentUser.value = await userApi.getUser(userId)
+      // 登录态恢复后，连 WS
+      useChatStore().initWs()
     } catch {
       logout()
     }
@@ -30,6 +33,8 @@ export const useUserStore = defineStore('user', () => {
       localStorage.setItem('minichat_user_id', userId)
       const user = await userApi.getUser(userId)
       currentUser.value = user
+      // 登录成功后连 WS
+      useChatStore().initWs()
     }
   }
 
@@ -39,6 +44,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     try { await authApi.logout() } catch { /* ignore */ }
+    useChatStore().closeWs()
     currentUser.value = null
     token.value = ''
     localStorage.removeItem('minichat_token')
@@ -47,12 +53,16 @@ export const useUserStore = defineStore('user', () => {
 
   async function updateProfile(data: Partial<User>) {
     if (!currentUser.value) return
-    await userApi.updateUser(currentUser.value.id, data)
+    // 用 localStorage 里的字符串 ID，避免雪花ID JS精度丢失
+    const userId = localStorage.getItem('minichat_user_id')
+    if (!userId) return
+    await userApi.updateUser(userId, data)
     currentUser.value = { ...currentUser.value, ...data }
   }
 
   async function deleteAccount() {
     if (!currentUser.value) return
+    useChatStore().closeWs()
     currentUser.value = null
     token.value = ''
     localStorage.removeItem('minichat_token')

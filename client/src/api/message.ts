@@ -1,68 +1,24 @@
-import { mockMessages, mockConversations } from '@/mock/data'
-import type { Message, Conversation } from '@/types'
+import { get, post } from '@/utils/request'
+import type { Message } from '@/types'
+import type { UploadVO } from '@/api/ws'
 
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms))
-
-// Replace mock senderId:1 with real logged-in user ID
-function patchMyMessages(data: Record<number, Message[]>) {
-  const myId = localStorage.getItem('minichat_user_id')
-  if (!myId) return data
-  for (const msgs of Object.values(data)) {
-    for (const msg of msgs) {
-      if (String(msg.senderId) === '1') {
-        msg.senderId = myId
-      }
-    }
-  }
-  return data
+/** 获取私聊历史 */
+export function getPrivateHistory(targetId: number | string, startTime?: string, endTime?: string) {
+  return get<Message[]>('/message/history/private', {
+    params: { targetId, startTime, endTime },
+  })
 }
 
-let messageStore = patchMyMessages(JSON.parse(JSON.stringify(mockMessages))) as Record<number, Message[]>
-let conversationStore = JSON.parse(JSON.stringify(mockConversations)) as Conversation[]
-let nextMsgId = 100
-
-export async function getMessages(conversationId: number): Promise<Message[]> {
-  await delay(100)
-  return [...(messageStore[conversationId] ?? [])]
+/** 获取群聊历史 */
+export function getGroupHistory(targetId: number | string, startTime?: string, endTime?: string) {
+  return get<Message[]>('/message/history/group', {
+    params: { targetId, startTime, endTime },
+  })
 }
 
-export async function sendMessage(
-  conversationId: number,
-  senderId: number,
-  senderName: string,
-  senderAvatar: string,
-  type: Message['type'],
-  content: string,
-  fileName?: string,
-): Promise<Message> {
-  await delay(50)
-  const msg: Message = {
-    id: nextMsgId++,
-    conversationId,
-    senderId,
-    senderName,
-    senderAvatar,
-    type,
-    content,
-    fileName,
-    createdAt: new Date().toISOString(),
-    read: false,
-  }
-  if (!messageStore[conversationId]) messageStore[conversationId] = []
-  messageStore[conversationId].push(msg)
-
-  const conv = conversationStore.find(c => c.id === conversationId)
-  if (conv) {
-    conv.lastMessage = type === 'text' ? content : `[${type}]`
-    conv.lastTime = msg.createdAt
-  }
-
-  return { ...msg }
-}
-
-export async function getConversations(): Promise<Conversation[]> {
-  await delay(100)
-  return [...conversationStore].sort(
-    (a, b) => new Date(b.lastTime).getTime() - new Date(a.lastTime).getTime(),
-  )
+/** 上传文件到 OSS */
+export function uploadFile(file: File) {
+  const fd = new FormData()
+  fd.append('file', file)
+  return post<UploadVO>('/oss/upload', fd)
 }

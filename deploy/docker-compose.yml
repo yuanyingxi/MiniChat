@@ -8,12 +8,13 @@ services:
     restart: always
     environment:
       - MODE=standalone
-      - SPRING_DATASOURCE_PLATFORM=embedded
       - TZ=Asia/Shanghai
     ports:
       - "${NACOS_PORT}:8848"      # HTTP 端口
       - "${NACOS_GRPC_PORT}:9848" # gRPC 客户端请求端口 (微服务长连接)
       - "9849:9849"               # gRPC 服务端内用端口 (防止心跳同步警告)
+    volumes:
+      - ${DATA_VOLUME_BASE}/nacos/data:/home/nacos/data
     networks:
       - minichat-network
 

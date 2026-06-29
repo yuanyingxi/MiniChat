@@ -34,5 +34,4 @@ deploy/data/
 /logs/
 .claude/
 
-# server/ 是各分支合并后的本地工作副本，不提交
-/server/
+.omo/

@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Friend } from '@/types'
 
 const chatStore = useChatStore()
 
-async function handleDelete(friendId: number, name: string) {
+function handleClick(friend: Friend) {
+  chatStore.openFriendChat(friend)
+}
+
+async function handleDelete(e: Event, friendId: number | string, name: string) {
+  e.stopPropagation()
   try {
     await ElMessageBox.confirm(`确定删除好友「${name}」？`, '删除好友', { type: 'warning' })
     await chatStore.deleteFriend(friendId)
@@ -12,31 +18,33 @@ async function handleDelete(friendId: number, name: string) {
   } catch { /* cancelled */ }
 }
 
-async function handleBlock(friendId: number, blocked: boolean, name: string) {
+async function handleBlock(e: Event, friendId: number | string, name: string) {
+  e.stopPropagation()
   await chatStore.blockFriend(friendId)
-  ElMessage.success(!blocked ? `已拉黑「${name}」` : `已取消拉黑「${name}」`)
+  ElMessage.success(`已处理「${name}」`)
 }
 </script>
 
 <template>
   <div class="friend-list">
-    <div v-for="friend in chatStore.friends" :key="friend.friendId" class="friend-item">
+    <div
+      v-for="friend in chatStore.friends"
+      :key="friend.friendId"
+      class="friend-item"
+      @click="handleClick(friend)"
+    >
       <el-avatar :size="36" :src="friend.avatar" />
       <div class="friend-info">
-        <span class="friend-name">
-          {{ friend.remark || friend.nickname }}
-          <el-tag v-if="friend.blocked" type="danger" size="small">已拉黑</el-tag>
-        </span>
-        <span class="friend-sig">{{ friend.remark }}</span>
+        <span class="friend-name">{{ friend.remark || friend.nickname }}</span>
       </div>
-      <el-dropdown trigger="click">
+      <el-dropdown trigger="click" @click.stop>
         <el-button size="small" :icon="MoreFilled" circle />
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item @click="handleBlock(friend.friendId, !!friend.blocked, friend.nickname)">
-              {{ friend.blocked ? '取消拉黑' : '拉黑' }}
+            <el-dropdown-item @click="handleBlock($event, friend.friendId, friend.nickname)">
+              拉黑/取消拉黑
             </el-dropdown-item>
-            <el-dropdown-item @click="handleDelete(friend.friendId, friend.nickname)" divided>
+            <el-dropdown-item @click="handleDelete($event, friend.friendId, friend.nickname)" divided>
               <span style="color: #f56c6c">删除好友</span>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -61,23 +69,13 @@ export default { components: { MoreFilled } }
   padding: 10px 16px;
   border-bottom: 1px solid var(--line-border-light);
   transition: background 0.15s;
+  cursor: pointer;
 }
 .friend-item:hover { background: var(--line-sidebar-item-hover); }
 .friend-info { flex: 1; min-width: 0; }
 .friend-name {
   font-size: 14px;
   color: var(--line-text-primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.friend-sig {
-  display: block;
-  font-size: 12px;
-  color: var(--line-text-tertiary);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 500;
 }
 </style>
