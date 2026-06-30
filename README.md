@@ -24,7 +24,6 @@ MiniChat/
 └── deploy/                     # Docker 中间件编排
     ├── docker-compose.yml
     ├── .env / .env.example     # 环境变量
-    ├── sql/                    # 初始化 SQL
     └── config/                 # Nacos / Nginx / RocketMQ 配置
 ```
 
@@ -150,7 +149,15 @@ docker exec -i minichat-mysql mysql -uroot -pyour_secure_password --default-char
 - 合并前执行 `mvn clean compile` 确保编译通过
 - 新的依赖统一写在父 pom.xml 里面，然后子 pom.xml 继承，方便看整个项目上技术栈
 
----
+## 🔐 敏感配置约定
+
+每个服务的 `application.yml` 都不允许出现明文密码/密钥，统一用 `${ENV:默认值}` 形式。
+
+**加载顺序（高优先级覆盖低优先级）：**
+
+```
+Nacos 远程配置 > 环境变量 > application-secret.yml > application.yml 默认值
+```
 
 ## 提醒
 

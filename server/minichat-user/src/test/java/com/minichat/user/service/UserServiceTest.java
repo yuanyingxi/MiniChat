@@ -24,6 +24,15 @@ class UserServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private UserIndexService userIndexService;
+
+    @Mock
+    private FriendService friendService;
+
+    @Mock
+    private GroupService groupService;
+
     @InjectMocks
     private UserService userService;
 
@@ -39,7 +48,7 @@ class UserServiceTest {
         user.setAvatar("old_avatar.jpg");
         user.setSignature("旧签名");
         user.setGender(1);
-        user.setStatus(1);
+        user.setStatus(1);  // 正常状态
         user.setCreateTime(LocalDateTime.now());
     }
 
@@ -95,7 +104,7 @@ class UserServiceTest {
         when(userMapper.selectById(userId)).thenReturn(user);
 
         UpdateUserRequest req = new UpdateUserRequest();
-        req.setNickname("仅改昵称"); // 只改昵称，其他为 null
+        req.setNickname("仅改昵称");
 
         userService.updateUser(userId, req);
 
@@ -104,7 +113,7 @@ class UserServiceTest {
 
         User updated = captor.getValue();
         assertEquals("仅改昵称", updated.getNickname());
-        assertNull(updated.getAvatar());  // 为 null 表示无需更新
+        assertNull(updated.getAvatar());
         assertNull(updated.getSignature());
         assertNull(updated.getGender());
     }
@@ -116,5 +125,59 @@ class UserServiceTest {
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> userService.updateUser(userId, new UpdateUserRequest()));
         assertEquals("用户不存在", ex.getMessage());
+    }
+
+    // ==================== cancelAccount() ====================
+
+    @Test
+    void cancelAccount_ShouldSetStatusTo3_AndClearES_AndCleanRelations_AndQuitGroups() {
+        when(userMapper.selectById(userId)).thenReturn(user);
+
+        userService.cancelAccount(userId);
+
+        // 1. User 表 status = 3
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, times(1)).updateById(userCaptor.capture());
+        assertEquals(3, userCaptor.getValue().getStatus());
+
+        // 2. ES 索引删除
+        verify(userIndexService, times(1)).removeUser(userId);
+
+        // 3. 清理好友关系
+        verify(friendService, times(1)).removeAllForUser(userId);
+
+        // 4. 退出所有群
+        verify(groupService, times(1)).quitAllGroupsForUser(userId);
+    }
+
+    @Test
+    void cancelAccount_ShouldThrow_WhenUserNotFound() {
+        when(userMapper.selectById(userId)).thenReturn(null);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.cancelAccount(userId));
+        assertEquals("用户不存在", ex.getMessage());
+
+        // 不应触发任何清理操作
+        verify(userIndexService, never()).removeUser(any());
+        verify(friendService, never()).removeAllForUser(any());
+        verify(groupService, never()).quitAllGroupsForUser(any());
+    }
+
+    @Test
+    void cancelAccount_ShouldThrow_WhenAlreadyCancelled() {
+        user.setStatus(3);  // 已注销
+        when(userMapper.selectById(userId)).thenReturn(user);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.cancelAccount(userId));
+        assertEquals("账号已注销，无需重复操作", ex.getMessage());
+
+        // 幂等保护：不应重复清理（用 ArgumentCaptor 消除 updateById 类型推断歧义）
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, never()).updateById(userCaptor.capture());
+        verify(userIndexService, never()).removeUser(any());
+        verify(friendService, never()).removeAllForUser(any());
+        verify(groupService, never()).quitAllGroupsForUser(any());
     }
 }

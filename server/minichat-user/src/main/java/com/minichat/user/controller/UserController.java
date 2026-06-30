@@ -25,13 +25,13 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "查询用户资料")
-    public Result<UserInfoResponse> getUserInfo(@PathVariable("id") Long id) {
+    public Result<UserInfoResponse> getUserInfo(@PathVariable Long id) {
         return Result.success(userService.getUserInfo(id));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "修改用户资料")
-    public Result<Void> updateUser(@PathVariable("id") Long id,
+    public Result<Void> updateUser(@PathVariable Long id,
                                    @Valid @RequestBody UpdateUserRequest req) {
         userService.updateUser(id, req);
         return Result.success(null);
@@ -43,5 +43,16 @@ public class UserController {
                                        @RequestParam("file") MultipartFile file) {
         String url = fileService.uploadAvatar(userId, file);
         return Result.success(url);
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "账号注销（软删除）")
+    public Result<Void> cancelAccount(@PathVariable Long id,
+                                      @RequestHeader("userId") Long userId) {
+        if (!id.equals(userId)) {
+            return Result.error(403, "只能注销自己的账号");
+        }
+        userService.cancelAccount(userId);
+        return Result.success(null);
     }
 }

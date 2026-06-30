@@ -16,6 +16,7 @@ import com.minichat.user.repository.UserSearchRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -133,8 +134,9 @@ class FriendServiceTest {
 
         friendService.acceptRequest(userId, handleReq);
 
-        verify(requestMapper, times(1)).updateById(request);
-        assertEquals(1, request.getStatus());
+        ArgumentCaptor<FriendRequest> reqCaptor = ArgumentCaptor.forClass(FriendRequest.class);
+        verify(requestMapper, times(1)).updateById(reqCaptor.capture());
+        assertEquals(1, reqCaptor.getValue().getStatus());
         verify(friendMapper, times(2)).insert(any(Friend.class));
     }
 
@@ -165,8 +167,9 @@ class FriendServiceTest {
 
         friendService.rejectRequest(userId, handleReq);
 
-        assertEquals(2, request.getStatus());
-        verify(requestMapper, times(1)).updateById(request);
+        ArgumentCaptor<FriendRequest> captor = ArgumentCaptor.forClass(FriendRequest.class);
+        verify(requestMapper, times(1)).updateById(captor.capture());
+        assertEquals(2, captor.getValue().getStatus());
     }
 
     // ==================== getFriendList() ====================
@@ -204,7 +207,9 @@ class FriendServiceTest {
         friendService.deleteFriend(userId, friendId);
 
         assertEquals(0, friend.getStatus());
-        verify(friendMapper, times(1)).updateById(friend);
+        ArgumentCaptor<Friend> captor = ArgumentCaptor.forClass(Friend.class);
+        verify(friendMapper, times(1)).updateById(captor.capture());
+        assertEquals(0, captor.getValue().getStatus());
     }
 
     // ==================== toggleBlock() ====================
@@ -276,5 +281,30 @@ class FriendServiceTest {
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> friendService.searchUsers(userId, "  "));
         assertEquals("搜索关键词不能为空", ex.getMessage());
+    }
+
+    // ==================== removeAllForUser()（账号注销清理） ====================
+
+    @Test
+    void removeAllForUser_ShouldDeleteFriendAndRequestRecords() {
+        friendService.removeAllForUser(1L);
+
+        // 验证 friendMapper.delete 被调用（带双向查询条件）
+        ArgumentCaptor<LambdaQueryWrapper<Friend>> friendCaptor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(friendMapper, times(1)).delete(friendCaptor.capture());
+        assertNotNull(friendCaptor.getValue());
+
+        // 验证 requestMapper.delete 被调用
+        ArgumentCaptor<LambdaQueryWrapper<FriendRequest>> reqCaptor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(requestMapper, times(1)).delete(reqCaptor.capture());
+        assertNotNull(reqCaptor.getValue());
+    }
+
+    @Test
+    void removeAllForUser_ShouldNotCallSearchRepository() {
+        // 注销清理不涉及 ES 搜索（ES 由 UserIndexService 处理）
+        friendService.removeAllForUser(1L);
+
+        verifyNoInteractions(searchRepository);
     }
 }

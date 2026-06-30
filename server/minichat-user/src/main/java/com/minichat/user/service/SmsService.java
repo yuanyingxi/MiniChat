@@ -64,10 +64,7 @@ public class SmsService {
                 throw new RuntimeException("短信发送失败: " + resp.getMessage());
             }
         } catch (Exception e) {
-            // 开发模式：SMS 未配，验证码打印到控制台
-            System.out.println("================================================");
-            System.out.println("  [DEV] 手机号 " + phone + " 的验证码: " + code);
-            System.out.println("================================================");
+            throw new RuntimeException("短信发送异常", e);
         }
     }
 

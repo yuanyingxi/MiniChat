@@ -191,34 +191,17 @@ public class FriendService {
         friendMapper.updateById(friend);
     }
 
-    // 全局搜索用户（ES + MySQL 兜底）
+    // 全局搜索用户（ES）
     public List<UserInfoResponse> searchUsers(Long userId, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             throw new RuntimeException("搜索关键词不能为空");
         }
 
-        // 先用 ES 搜索
+        // 用 ES 搜索昵称匹配的用户
         List<UserDocument> docs = searchRepository.findByNickname(keyword);
 
-        // ES 无结果时用 MySQL 兜底（支持手机号搜索）
-        if (docs.isEmpty()) {
-            return userMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
-                    .and(w -> w.like(User::getPhone, keyword).or().like(User::getNickname, keyword))
-                    .ne(User::getId, userId)
-                    .last("LIMIT 20")
-            ).stream().map(user -> {
-                UserInfoResponse vo = new UserInfoResponse();
-                vo.setId(user.getId());
-                vo.setNickname(user.getNickname());
-                vo.setPhone(user.getPhone());
-                vo.setAvatar(user.getAvatar());
-                return vo;
-            }).collect(Collectors.toList());
-        }
-
         return docs.stream()
-                .filter(doc -> !doc.getId().equals(userId))
+                .filter(doc -> !doc.getId().equals(userId))  // 排除自己
                 .limit(20)
                 .map(doc -> {
                     UserInfoResponse vo = new UserInfoResponse();
@@ -228,5 +211,23 @@ public class FriendService {
                     vo.setAvatar(doc.getAvatar());
                     return vo;
                 }).collect(Collectors.toList());
+    }
+
+    /**
+     * 账号注销时清理好友关系
+     * 删除所有以 userId 为 userId 或 friendId 的好友记录
+     * 删除所有以 userId 为 fromId 或 toId 的好友请求
+     */
+    @Transactional
+    public void removeAllForUser(Long userId) {
+        // 1. 删好友关系（双向）
+        LambdaQueryWrapper<Friend> friendQ = new LambdaQueryWrapper<>();
+        friendQ.eq(Friend::getUserId, userId).or().eq(Friend::getFriendId, userId);
+        friendMapper.delete(friendQ);
+
+        // 2. 删好友请求（双向）
+        LambdaQueryWrapper<FriendRequest> reqQ = new LambdaQueryWrapper<>();
+        reqQ.eq(FriendRequest::getFromId, userId).or().eq(FriendRequest::getToId, userId);
+        requestMapper.delete(reqQ);
     }
 }

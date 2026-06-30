@@ -24,7 +24,7 @@ public class InternalUserController {
     private UserMapper userMapper;
 
     @GetMapping("/{id}")
-    public InternalUserResponse getUserById(@PathVariable("id") Long id) {
+    public InternalUserResponse getUserById(@PathVariable Long id) {
         User user = userMapper.selectById(id);
         if (user == null) {
             return null;

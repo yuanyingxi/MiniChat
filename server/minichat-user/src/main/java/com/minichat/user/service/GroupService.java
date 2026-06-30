@@ -244,4 +244,46 @@ public class GroupService {
             memberMapper.updateById(m);
         }
     }
+
+    /**
+     * 账号注销时退出所有群（保留历史记录，不真删）
+     * - 普通成员：标记为已退群
+     * - 群主身份：所建群标记为已解散，成员连带退群
+     */
+    @Transactional
+    public void quitAllGroupsForUser(Long userId) {
+        // 1. 查用户所有正常状态的群成员记录
+        List<GroupMember> myMemberships = memberMapper.selectList(
+                new LambdaQueryWrapper<GroupMember>()
+                        .eq(GroupMember::getUserId, userId)
+                        .eq(GroupMember::getStatus, 1)
+        );
+        for (GroupMember m : myMemberships) {
+            m.setStatus(2);  // 已退群
+            m.setQuitTime(LocalDateTime.now());
+            memberMapper.updateById(m);
+        }
+
+        // 2. 处理我作为群主创建的群：标记为已解散 + 其他成员连带退群
+        List<Group> ownedGroups = groupMapper.selectList(
+                new LambdaQueryWrapper<Group>()
+                        .eq(Group::getOwnerId, userId)
+                        .eq(Group::getStatus, 1)
+        );
+        for (Group g : ownedGroups) {
+            g.setStatus(2);
+            groupMapper.updateById(g);
+
+            List<GroupMember> others = memberMapper.selectList(
+                    new LambdaQueryWrapper<GroupMember>()
+                            .eq(GroupMember::getGroupId, g.getId())
+                            .eq(GroupMember::getStatus, 1)
+            );
+            for (GroupMember o : others) {
+                o.setStatus(2);
+                o.setQuitTime(LocalDateTime.now());
+                memberMapper.updateById(o);
+            }
+        }
+    }
 }

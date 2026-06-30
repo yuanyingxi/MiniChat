@@ -32,7 +32,7 @@ public class GroupController {
     @PostMapping("/{groupId}/quit")
     @Operation(summary = "退出群")
     public Result<Void> quitGroup(@RequestHeader("userId") Long userId,
-                                  @PathVariable("groupId") Long groupId) {
+                                  @PathVariable Long groupId) {
         groupService.quitGroup(userId, groupId);
         return Result.success(null);
     }
@@ -40,8 +40,8 @@ public class GroupController {
     @PostMapping("/{groupId}/kick/{memberId}")
     @Operation(summary = "踢出群成员（群主操作）")
     public Result<Void> kickMember(@RequestHeader("userId") Long userId,
-                                   @PathVariable("groupId") Long groupId,
-                                   @PathVariable("memberId") Long memberId) {
+                                   @PathVariable Long groupId,
+                                   @PathVariable Long memberId) {
         groupService.kickMember(userId, groupId, memberId);
         return Result.success(null);
     }
@@ -54,14 +54,14 @@ public class GroupController {
 
     @GetMapping("/{groupId}/members")
     @Operation(summary = "群成员列表")
-    public Result<List<GroupMemberVO>> getMembers(@PathVariable("groupId") Long groupId) {
+    public Result<List<GroupMemberVO>> getMembers(@PathVariable Long groupId) {
         return Result.success(groupService.getMembers(groupId));
     }
 
     @PutMapping("/{groupId}")
     @Operation(summary = "修改群信息（群主操作）")
     public Result<Void> updateGroup(@RequestHeader("userId") Long userId,
-                                    @PathVariable("groupId") Long groupId,
+                                    @PathVariable Long groupId,
                                     @Valid @RequestBody UpdateGroup req) {
         groupService.updateGroup(userId, groupId, req);
         return Result.success(null);
@@ -70,7 +70,7 @@ public class GroupController {
     @DeleteMapping("/{groupId}")
     @Operation(summary = "解散群（群主操作）")
     public Result<Void> dismissGroup(@RequestHeader("userId") Long userId,
-                                     @PathVariable("groupId") Long groupId) {
+                                     @PathVariable Long groupId) {
         groupService.dismissGroup(userId, groupId);
         return Result.success(null);
     }

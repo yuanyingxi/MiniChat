@@ -37,6 +37,8 @@
         <aliyun-dypnsapi.version>1.2.12</aliyun-dypnsapi.version>
         <jjwt.version>0.12.5</jjwt.version>
         <lombok.version>1.18.32</lombok.version>
+        <!-- Spring Cloud OpenFeign（服务间 HTTP 调用，message 等模块会用到） -->
+        <spring-cloud-starter-openfeign.version>4.0.4</spring-cloud-starter-openfeign.version>
     </properties>
 
     <dependencyManagement>
@@ -140,6 +142,12 @@
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
             </dependency>
+            <!-- Spring Cloud OpenFeign（服务间 HTTP 调用，message 等模块会用到） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-starter-openfeign</artifactId>
+                <version>${spring-cloud-starter-openfeign.version}</version>
+            </dependency>
             <!-- 内部模块 -->
             <dependency>
                 <groupId>com.minichat</groupId>
@@ -156,6 +164,19 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
+                </plugin>
+                <!-- Maven 编译插件：开启 -parameters，让 @PathVariable / @RequestParam 拿得到参数名 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

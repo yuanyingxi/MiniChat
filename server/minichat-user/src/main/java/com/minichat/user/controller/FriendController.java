@@ -33,7 +33,7 @@ public class FriendController {
     @PostMapping("/request/{id}/accept")
     @Operation(summary = "同意好友请求")
     public Result<Void> acceptRequest(@RequestHeader("userId") Long userId,
-                                      @PathVariable("id") Long id) {
+                                      @PathVariable Long id) {
         HandleFriendRequest dto = new HandleFriendRequest();
         dto.setRequestId(id);
         friendService.acceptRequest(userId, dto);
@@ -43,7 +43,7 @@ public class FriendController {
     @PostMapping("/request/{id}/reject")
     @Operation(summary = "拒绝好友请求")
     public Result<Void> rejectRequest(@RequestHeader("userId") Long userId,
-                                      @PathVariable("id") Long id) {
+                                      @PathVariable Long id) {
         HandleFriendRequest dto = new HandleFriendRequest();
         dto.setRequestId(id);
         friendService.rejectRequest(userId, dto);
@@ -65,7 +65,7 @@ public class FriendController {
     @DeleteMapping("/{friendId}")
     @Operation(summary = "删除好友")
     public Result<Void> deleteFriend(@RequestHeader("userId") Long userId,
-                                     @PathVariable("friendId") Long friendId) {
+                                     @PathVariable Long friendId) {
         friendService.deleteFriend(userId, friendId);
         return Result.success(null);
     }
@@ -73,7 +73,7 @@ public class FriendController {
     @PostMapping("/{friendId}/block")
     @Operation(summary = "拉黑/取消拉黑")
     public Result<Void> toggleBlock(@RequestHeader("userId") Long userId,
-                                    @PathVariable("friendId") Long friendId) {
+                                    @PathVariable Long friendId) {
         friendService.toggleBlock(userId, friendId);
         return Result.success(null);
     }
@@ -82,7 +82,7 @@ public class FriendController {
     @Operation(summary = "全局搜索用户（ES）")
     public Result<List<UserInfoResponse>> searchUsers(
             @RequestHeader("userId") Long userId,
-            @RequestParam("keyword") String keyword) {
+            @RequestParam String keyword) {
         return Result.success(friendService.searchUsers(userId, keyword));
     }
 }

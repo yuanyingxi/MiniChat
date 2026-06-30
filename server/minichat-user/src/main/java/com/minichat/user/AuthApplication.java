@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @SpringBootApplication(scanBasePackages = "com.minichat")
-@EnableDiscoveryClient
+@EnableDiscoveryClient      // Auth 服务启动时自动注册到 Nacos 注册中心
 @MapperScan("com.minichat.user.mapper")
 public class AuthApplication {
     public static void main(String[] args) {

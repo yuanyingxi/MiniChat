@@ -27,4 +27,12 @@ public class UserIndexService {
         doc.setCreateTime(user.getCreateTime());
         searchRepository.save(doc);
     }
+
+    /**
+     * 从 ES 索引中删除用户
+     * 账号注销时调用
+     */
+    public void removeUser(Long userId) {
+        searchRepository.deleteById(userId);
+    }
 }
