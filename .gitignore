@@ -32,5 +32,6 @@ deploy/data/
 *.log
 **/logs/
 /logs/
+.claude/
 
-.omo
+.omo/
