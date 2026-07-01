@@ -35,6 +35,8 @@ export interface FriendRequestVO {
   id: number | string
   fromId: number | string
   toId: number | string
+  fromUserNickname: string
+  fromUserAvatar: string
   remark: string
   status: number   // 0待处理 1同意 2拒绝
   createTime: string

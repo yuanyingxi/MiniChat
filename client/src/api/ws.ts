@@ -37,12 +37,6 @@ let _onHeartbeat: HeartbeatHandler | null = null
 
 function getWsUrl(): string {
   const token = localStorage.getItem('minichat_token')
-  const isDev = import.meta.env.DEV
-  if (isDev) {
-    // 开发环境直连网关
-    return `ws://localhost:8080/ws?token=${token}`
-  }
-  // 生产环境用当前协议 + 域名
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${proto}//${location.host}/ws?token=${token}`
 }

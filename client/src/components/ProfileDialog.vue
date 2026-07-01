@@ -127,8 +127,13 @@ async function handleDeleteAccount() {
 .avatar-upload {
   position: relative;
   cursor: pointer;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .avatar-upload .avatar-overlay {
   position: absolute;
