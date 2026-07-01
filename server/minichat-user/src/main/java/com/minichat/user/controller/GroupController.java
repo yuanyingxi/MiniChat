@@ -54,8 +54,9 @@ public class GroupController {
 
     @GetMapping("/{groupId}/members")
     @Operation(summary = "群成员列表")
-    public Result<List<GroupMemberVO>> getMembers(@PathVariable Long groupId) {
-        return Result.success(groupService.getMembers(groupId));
+    public Result<List<GroupMemberVO>> getMembers(@RequestHeader("userId") Long userId,
+                                                  @PathVariable Long groupId) {
+        return Result.success(groupService.getMembers(userId, groupId));
     }
 
     @PutMapping("/{groupId}")

@@ -29,10 +29,33 @@ class FileServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private UserIndexService userIndexService;
+
     @InjectMocks
     private FileService fileService;
 
     private Long userId = 1L;
+
+    /** 生成带 JPEG 魔数头的 Mock 文件 */
+    private MockMultipartFile jpegFile(String name, byte[] extraData) {
+        // JPEG 头: FF D8 FF + 原始数据
+        byte[] jpegHeader = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+        byte[] full = new byte[jpegHeader.length + extraData.length];
+        System.arraycopy(jpegHeader, 0, full, 0, jpegHeader.length);
+        System.arraycopy(extraData, 0, full, jpegHeader.length, extraData.length);
+        return new MockMultipartFile("file", name, "image/jpeg", full);
+    }
+
+    /** 生成带 PNG 魔数头的 Mock 文件 */
+    private MockMultipartFile pngFile(String name, byte[] extraData) {
+        // PNG 头: 89 50 4E 47
+        byte[] pngHeader = {(byte) 0x89, 0x50, 0x4E, 0x47};
+        byte[] full = new byte[pngHeader.length + extraData.length];
+        System.arraycopy(pngHeader, 0, full, 0, pngHeader.length);
+        System.arraycopy(extraData, 0, full, pngHeader.length, extraData.length);
+        return new MockMultipartFile("file", name, "image/png", full);
+    }
 
     @BeforeEach
     void setUp() {
@@ -42,17 +65,17 @@ class FileServiceTest {
 
     @Test
     void uploadAvatar_ShouldSucceed_WhenValidImage() throws IOException {
-        MultipartFile file = new MockMultipartFile(
-                "file", "avatar.jpg", "image/jpeg",
-                new ByteArrayInputStream("fake-image-data".getBytes())
-        );
+        MultipartFile file = jpegFile("avatar.jpg", "fake-image-data".getBytes());
+
+        // userMapper.selectById 需返回 User（ES 同步用）
+        when(userMapper.selectById(userId)).thenReturn(new com.minichat.user.entity.User());
 
         String url = fileService.uploadAvatar(userId, file);
 
         assertTrue(url.startsWith("https://minichat-avatars.oss-cn-hangzhou.aliyuncs.com/avatars/1/"));
         assertTrue(url.endsWith(".jpg"));
         verify(ossClient, times(1)).putObject(any(PutObjectRequest.class));
-        verify(userMapper, times(1)).updateById(isA(com.minichat.user.entity.User.class));
+        verify(userMapper, atLeastOnce()).updateById(isA(com.minichat.user.entity.User.class));
     }
 
     @Test
@@ -93,9 +116,7 @@ class FileServiceTest {
     @Test
     void uploadAvatar_ShouldThrow_WhenFileTooLarge() {
         byte[] largeData = new byte[3 * 1024 * 1024]; // 3MB
-        MultipartFile file = new MockMultipartFile(
-                "file", "large.jpg", "image/jpeg", largeData
-        );
+        MultipartFile file = jpegFile("large.jpg", largeData);
 
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> fileService.uploadAvatar(userId, file));
@@ -110,7 +131,11 @@ class FileServiceTest {
         when(file.getContentType()).thenReturn("image/jpeg");
         when(file.getSize()).thenReturn(1024L);
         when(file.getOriginalFilename()).thenReturn("avatar.jpg");
-        when(file.getInputStream()).thenReturn(new ByteArrayInputStream("data".getBytes()));
+        // 第一次调用返回 JPEG 魔数，第二次返回完整数据给 OSS
+        byte[] jpegHeader = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00};
+        when(file.getInputStream())
+                .thenReturn(new ByteArrayInputStream(jpegHeader))
+                .thenReturn(new ByteArrayInputStream(jpegHeader));
 
         doThrow(new RuntimeException("OSS connection failed"))
                 .when(ossClient).putObject(any(PutObjectRequest.class));
@@ -122,10 +147,9 @@ class FileServiceTest {
 
     @Test
     void uploadAvatar_ShouldUseDefaultExtension_WhenFilenameHasNoExtension() {
-        MultipartFile file = new MockMultipartFile(
-                "file", "avatar", "image/png",
-                "data".getBytes()
-        );
+        MultipartFile file = pngFile("avatar", "data".getBytes());
+
+        when(userMapper.selectById(userId)).thenReturn(new com.minichat.user.entity.User());
 
         String url = fileService.uploadAvatar(userId, file);
 
@@ -134,10 +158,9 @@ class FileServiceTest {
 
     @Test
     void uploadAvatar_ShouldPreserveExtension_WhenFilenameHasExtension() {
-        MultipartFile file = new MockMultipartFile(
-                "file", "avatar.png", "image/png",
-                "data".getBytes()
-        );
+        MultipartFile file = pngFile("avatar.png", "data".getBytes());
+
+        when(userMapper.selectById(userId)).thenReturn(new com.minichat.user.entity.User());
 
         String url = fileService.uploadAvatar(userId, file);
 

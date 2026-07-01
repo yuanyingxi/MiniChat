@@ -193,10 +193,12 @@ class GroupServiceTest {
 
     @Test
     void getMembers_ShouldReturnList() {
+        // 当前用户是群成员
+        when(memberMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(ownerMember);
         when(memberMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(ownerMember));
         when(userMapper.selectById(userId)).thenReturn(ownerUser);
 
-        List<GroupMemberVO> result = groupService.getMembers(groupId);
+        List<GroupMemberVO> result = groupService.getMembers(userId, groupId);
 
         assertEquals(1, result.size());
         assertEquals("群主", result.get(0).getNickname());

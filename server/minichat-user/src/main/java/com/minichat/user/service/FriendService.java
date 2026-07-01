@@ -1,6 +1,7 @@
 package com.minichat.user.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.minichat.user.dto.FriendRequestVO;
 import com.minichat.user.dto.FriendVO;
 import com.minichat.user.dto.HandleFriendRequest;
 import com.minichat.user.dto.SendFriendRequest;
@@ -44,10 +45,13 @@ public class FriendService {
             throw new RuntimeException("不能添加自己为好友");
         }
 
-        // 2. 对方用户必须存在
+        // 2. 对方用户必须存在且未注销
         User toUser = userMapper.selectById(req.getToId());
         if (toUser == null) {
             throw new RuntimeException("用户不存在");
+        }
+        if (toUser.getStatus() != null && toUser.getStatus() == 3) {
+            throw new RuntimeException("该用户已注销");
         }
 
         // 3. 是否已经是好友
@@ -132,14 +136,33 @@ public class FriendService {
         requestMapper.updateById(request);
     }
 
-    // 查看收到的待处理请求
-    public List<FriendRequest> getIncomingRequests(Long userId) {
-        return requestMapper.selectList(
+    // 查看收到的待处理请求（关联查发送者昵称头像）
+    public List<FriendRequestVO> getIncomingRequests(Long userId) {
+        List<FriendRequest> requests = requestMapper.selectList(
                 new LambdaQueryWrapper<FriendRequest>()
                         .eq(FriendRequest::getToId, userId)
                         .eq(FriendRequest::getStatus, 0)
                         .orderByDesc(FriendRequest::getCreateTime)
         );
+        return requests.stream().map(req -> {
+            FriendRequestVO vo = new FriendRequestVO();
+            vo.setId(req.getId());
+            vo.setFromId(req.getFromId());
+            vo.setToId(req.getToId());
+            vo.setRemark(req.getRemark());
+            vo.setStatus(req.getStatus());
+            vo.setCreateTime(req.getCreateTime());
+            vo.setUpdateTime(req.getUpdateTime());
+            // 查发送者信息
+            User fromUser = userMapper.selectById(req.getFromId());
+            if (fromUser != null) {
+                vo.setFromUserNickname(fromUser.getNickname());
+                vo.setFromUserAvatar(fromUser.getAvatar());
+            } else {
+                vo.setFromUserNickname("已注销");
+            }
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     // 好友列表

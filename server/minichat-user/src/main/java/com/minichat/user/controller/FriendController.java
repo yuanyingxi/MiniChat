@@ -4,7 +4,7 @@ import com.minichat.common.result.Result;
 import com.minichat.user.dto.FriendVO;
 import com.minichat.user.dto.HandleFriendRequest;
 import com.minichat.user.dto.SendFriendRequest;
-import com.minichat.user.entity.FriendRequest;
+import com.minichat.user.dto.FriendRequestVO;
 import com.minichat.user.dto.UserInfoResponse;
 import com.minichat.user.service.FriendService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,7 +52,7 @@ public class FriendController {
 
     @GetMapping("/requests")
     @Operation(summary = "查看待处理的好友请求")
-    public Result<List<FriendRequest>> getRequests(@RequestHeader("userId") Long userId) {
+    public Result<List<FriendRequestVO>> getRequests(@RequestHeader("userId") Long userId) {
         return Result.success(friendService.getIncomingRequests(userId));
     }
 

@@ -1,6 +1,7 @@
 # front 分支只保留 client 前端代码
 /*
 !/client/
+!/server/
 !.gitignore
 
 # 操作系统与 IDE 特性文件

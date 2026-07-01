@@ -149,7 +149,7 @@ class AuthServiceTest {
         // Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> authService.login(loginReq));
-        assertEquals("用户不存在", ex.getMessage());
+        assertEquals("手机号或密码错误", ex.getMessage());
     }
 
     @Test
@@ -161,7 +161,7 @@ class AuthServiceTest {
         // Act & Assert
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> authService.login(loginReq));
-        assertEquals("密码错误", ex.getMessage());
+        assertEquals("手机号或密码错误", ex.getMessage());
     }
 
     // ==================== logout() ====================

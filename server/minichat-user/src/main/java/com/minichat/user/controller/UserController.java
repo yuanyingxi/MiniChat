@@ -33,7 +33,11 @@ public class UserController {
     @PutMapping("/{id}")
     @Operation(summary = "修改用户资料")
     public Result<Void> updateUser(@PathVariable Long id,
+                                   @RequestHeader("userId") Long userId,
                                    @Valid @RequestBody UpdateUserRequest req) {
+        if (!id.equals(userId)) {
+            return Result.error(403, "只能修改自己的资料");
+        }
         userService.updateUser(id, req);
         return Result.success(null);
     }

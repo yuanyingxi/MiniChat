@@ -38,6 +38,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
+        // /internal/** 是服务间 RPC 接口，禁止从网关外部访问
+        if (path.startsWith("/internal/")) {
+            log.warn("Blocked external access to internal endpoint: {}", path);
+            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+            return exchange.getResponse().setComplete();
+        }
+
         // 白名单放行
         for (String prefix : WHITE_LIST) {
             if (path.startsWith(prefix)) {

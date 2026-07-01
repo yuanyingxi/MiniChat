@@ -71,11 +71,16 @@ public class AuthService {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getPhone, req.getPhone())
         );
+        // 统一错误信息，防止攻击者枚举已注册手机号
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw new RuntimeException("手机号或密码错误");
+        }
+        // 校验账号状态
+        if (user.getStatus() != null && user.getStatus() == 3) {
+            throw new RuntimeException("该账号已注销");
         }
         if (!passwordMatches(req.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("密码错误");
+            throw new RuntimeException("手机号或密码错误");
         }
         return jwtService.createToken(user.getId());
     }

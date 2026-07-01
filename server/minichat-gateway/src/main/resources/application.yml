@@ -16,7 +16,7 @@ spring:
         - id: user-service
           uri: lb://minichat-user
           predicates:
-            - Path=/auth/**,/user/**,/friend/**,/group/**,/file/**,/internal/**
+            - Path=/auth/**,/user/**,/friend/**,/group/**,/file/**
         - id: message-service
           uri: lb://minichat-message
           predicates:
@@ -28,7 +28,7 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowed-origins: "http://localhost:5173"
+            allowed-origin-patterns: "*"
             allowed-methods: "*"
             allowed-headers: "*"
             allow-credentials: true

@@ -182,8 +182,41 @@ public class GroupService {
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    // 群成员列表
-    public List<GroupMemberVO> getMembers(Long groupId) {
+    // 群成员列表（内部调用，不做权限校验）
+    public List<GroupMemberVO> getMembersInternal(Long groupId) {
+        // 1. 查出所有在群成员（status=1）
+        List<GroupMember> members = memberMapper.selectList(
+                new LambdaQueryWrapper<GroupMember>()
+                        .eq(GroupMember::getGroupId, groupId)
+                        .eq(GroupMember::getStatus, 1)
+        );
+
+        // 2. 查每个成员的用户信息
+        return members.stream().map(m -> {
+            User user = userMapper.selectById(m.getUserId());
+            GroupMemberVO vo = new GroupMemberVO();
+            vo.setUserId(m.getUserId());
+            vo.setNickname(user != null ? user.getNickname() : "未知");
+            vo.setAvatar(user != null ? user.getAvatar() : null);
+            vo.setRole(m.getRole());
+            vo.setAlias(m.getAlias());
+            return vo;
+        }).collect(Collectors.toList());
+    }
+
+    // 群成员列表（仅群成员可查看）
+    public List<GroupMemberVO> getMembers(Long userId, Long groupId) {
+        // 校验当前用户是否是群成员
+        GroupMember myMembership = memberMapper.selectOne(
+                new LambdaQueryWrapper<GroupMember>()
+                        .eq(GroupMember::getGroupId, groupId)
+                        .eq(GroupMember::getUserId, userId)
+                        .eq(GroupMember::getStatus, 1)
+        );
+        if (myMembership == null) {
+            throw new RuntimeException("你不是该群成员，无权查看");
+        }
+
         // 1. 查出所有在群成员（status=1）
         List<GroupMember> members = memberMapper.selectList(
                 new LambdaQueryWrapper<GroupMember>()

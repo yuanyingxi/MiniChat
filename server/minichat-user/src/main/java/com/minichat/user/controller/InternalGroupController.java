@@ -19,7 +19,7 @@ public class InternalGroupController {
 
     @GetMapping("/{groupId}/members")
     public List<InternalGroupResponse> getMembers(@PathVariable Long groupId) {
-        return groupService.getMembers(groupId).stream()
+        return groupService.getMembersInternal(groupId).stream()
                 .map(vo -> new InternalGroupResponse(vo.getUserId(), vo.getNickname(), vo.getAvatar()))
                 .toList();
     }
