@@ -1,37 +1,16 @@
-# 操作系统与 IDE 特性文件
-.DS_Store
-desktop.ini
-.idea/
-*.iml
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# 只追踪 server/minichat-gateway 目录
+/*
+!/server/
+/server/**
+!/server/minichat-gateway/
+!/server/pom.xml
+!.gitignore
 
-# Java / Maven 编译输出
+# 通用规则
 **/target/
 *.class
-
-# Docker 协作核心隔离规则 (极为重要)
-.env
-
-/deploy/data/
-deploy/data/
-**/data/mysql/
-**/data/redis/
-**/data/elasticsearch/
-**/data/rocketmq/
-
-# 前端 Vue 编译输出
-/node_modules/
-/dist/
-
-# 拦截所有目录下任何地方产生的日志文件及日志文件夹
-*.log
-**/logs/
-/logs/
+.idea/
+.vscode/
+*.iml
 .claude/
-
-.omo/
+.env
