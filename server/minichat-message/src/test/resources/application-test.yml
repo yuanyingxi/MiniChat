@@ -1,0 +1,7 @@
+aliyun:
+  oss:
+    endpoint: https://oss-cn-guangzhou.aliyuncs.com
+    region: cn-guangzhou
+    access-key-id: key-id
+    access-key-secret: key-secret
+    bucket-name: minichat-guangzhou-123
