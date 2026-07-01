@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import ConversationList from '@/components/ConversationList.vue'
 import FriendList from '@/components/FriendList.vue'
+import FriendRequestsPanel from '@/components/FriendRequestsPanel.vue'
 import GroupList from '@/components/GroupList.vue'
 import ChatWindow from '@/components/ChatWindow.vue'
 import ProfileDialog from '@/components/ProfileDialog.vue'
@@ -26,6 +27,7 @@ onMounted(async () => {
     chatStore.loadConversations(),
     chatStore.loadFriends(),
     chatStore.loadGroups(),
+    chatStore.loadFriendRequests(),
   ])
 })
 
@@ -48,7 +50,13 @@ function handleLogout() {
 
       <el-tabs v-model="activeTab" class="sidebar-tabs">
         <el-tab-pane label="会话" name="conversations" />
-        <el-tab-pane label="好友" name="friends" />
+        <el-tab-pane name="friends">
+          <template #label>
+            <el-badge :value="chatStore.friendRequests.length" :max="99" :hidden="chatStore.friendRequests.length === 0">
+              <span style="padding: 0 4px">好友</span>
+            </el-badge>
+          </template>
+        </el-tab-pane>
         <el-tab-pane label="群组" name="groups" />
       </el-tabs>
 
@@ -59,7 +67,10 @@ function handleLogout() {
 
       <div class="sidebar-content">
         <ConversationList v-if="activeTab === 'conversations'" />
-        <FriendList v-else-if="activeTab === 'friends'" />
+        <template v-else-if="activeTab === 'friends'">
+          <FriendRequestsPanel />
+          <FriendList />
+        </template>
         <GroupList v-else-if="activeTab === 'groups'" />
       </div>
     </div>
@@ -138,6 +149,10 @@ function handleLogout() {
 }
 .sidebar-tabs :deep(.el-tabs__item:hover) {
   color: var(--line-green-hover);
+}
+.sidebar-tabs :deep(.el-badge__content) {
+  background-color: var(--line-badge-bg);
+  border: none;
 }
 
 .sidebar-actions {

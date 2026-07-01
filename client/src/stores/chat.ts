@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Conversation, Message, Friend, Group, TextContent, ImageContent, FileContent } from '@/types'
+import type { Conversation, Message, Friend, Group, FriendRequestVO, TextContent, ImageContent, FileContent } from '@/types'
 import * as msgApi from '@/api/message'
 import * as friendApi from '@/api/friend'
 import * as groupApi from '@/api/group'
@@ -12,6 +12,7 @@ export const useChatStore = defineStore('chat', () => {
   const activeConversation = ref<Conversation | null>(null)
   const messages = ref<Message[]>([])
   const friends = ref<Friend[]>([])
+  const friendRequests = ref<FriendRequestVO[]>([])
   const groups = ref<Group[]>([])
   const loading = ref(false)
 
@@ -226,6 +227,25 @@ export const useChatStore = defineStore('chat', () => {
     ElMessage.success('已处理')
   }
 
+  // ── 好友请求 ──
+
+  async function loadFriendRequests() {
+    friendRequests.value = await friendApi.getFriendRequests()
+  }
+
+  async function acceptFriendRequest(id: number | string) {
+    await friendApi.acceptFriendRequest(id)
+    ElMessage.success('已同意好友请求')
+    await loadFriendRequests()
+    await loadConversations()   // 内部会 reload 好友列表并重建会话
+  }
+
+  async function rejectFriendRequest(id: number | string) {
+    await friendApi.rejectFriendRequest(id)
+    ElMessage.success('已拒绝好友请求')
+    await loadFriendRequests()
+  }
+
   // ── 群组 ──
 
   async function loadGroups() {
@@ -252,10 +272,11 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   return {
-    conversations, activeConversation, messages, friends, groups, loading,
+    conversations, activeConversation, messages, friends, friendRequests, groups, loading,
     initWs, closeWs,
     loadConversations, selectConversation, openFriendChat, openGroupChat, sendMessage,
     loadFriends, sendFriendRequest, deleteFriend, blockFriend,
+    loadFriendRequests, acceptFriendRequest, rejectFriendRequest,
     loadGroups, createGroup, leaveGroup,
   }
 })
