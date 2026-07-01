@@ -11,4 +11,7 @@ public interface UserSearchRepository extends ElasticsearchRepository<UserDocume
 
     // 按昵称搜索用户（ES 自动实现，使用 match 查询）
     List<UserDocument> findByNickname(String nickname);
+
+    // 按手机号精确搜索
+    UserDocument findByPhone(String phone);
 }

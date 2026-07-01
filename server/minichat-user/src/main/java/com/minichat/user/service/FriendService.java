@@ -17,7 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -191,26 +194,67 @@ public class FriendService {
         friendMapper.updateById(friend);
     }
 
-    // 全局搜索用户（ES）
+    // 全局搜索用户（ES + MySQL 兜底）
     public List<UserInfoResponse> searchUsers(Long userId, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             throw new RuntimeException("搜索关键词不能为空");
         }
 
-        // 用 ES 搜索昵称匹配的用户
-        List<UserDocument> docs = searchRepository.findByNickname(keyword);
+        Set<Long> seenIds = new HashSet<>();
+        List<UserInfoResponse> results = new ArrayList<>();
 
-        return docs.stream()
-                .filter(doc -> !doc.getId().equals(userId))  // 排除自己
-                .limit(20)
-                .map(doc -> {
-                    UserInfoResponse vo = new UserInfoResponse();
-                    vo.setId(doc.getId());
-                    vo.setNickname(doc.getNickname());
-                    vo.setPhone(doc.getPhone());
-                    vo.setAvatar(doc.getAvatar());
-                    return vo;
-                }).collect(Collectors.toList());
+        // 1. ES 搜索昵称（match 查询，对中文效果一般）
+        List<UserDocument> nicknameDocs = searchRepository.findByNickname(keyword);
+        for (UserDocument doc : nicknameDocs) {
+            if (!doc.getId().equals(userId) && !seenIds.contains(doc.getId())) {
+                seenIds.add(doc.getId());
+                results.add(toUserInfoResponse(doc));
+            }
+        }
+
+        // 2. ES 按手机号精确搜索
+        UserDocument phoneDoc = searchRepository.findByPhone(keyword);
+        if (phoneDoc != null && !phoneDoc.getId().equals(userId) && !seenIds.contains(phoneDoc.getId())) {
+            seenIds.add(phoneDoc.getId());
+            results.add(toUserInfoResponse(phoneDoc));
+        }
+
+        // 3. MySQL LIKE 兜底搜昵称（解决 ES standard analyzer 对中文的不足）
+        if (nicknameDocs.isEmpty()) {
+            List<User> mysqlUsers = userMapper.selectList(
+                    new LambdaQueryWrapper<User>()
+                            .like(User::getNickname, keyword)
+                            .ne(User::getId, userId)
+                            .ne(User::getStatus, 3)  // 排除已注销
+                            .last("LIMIT 20")
+            );
+            for (User u : mysqlUsers) {
+                if (!seenIds.contains(u.getId())) {
+                    seenIds.add(u.getId());
+                    results.add(toUserInfoResponse(u));
+                }
+            }
+        }
+
+        return results.stream().limit(20).collect(Collectors.toList());
+    }
+
+    private UserInfoResponse toUserInfoResponse(UserDocument doc) {
+        UserInfoResponse vo = new UserInfoResponse();
+        vo.setId(doc.getId());
+        vo.setNickname(doc.getNickname());
+        vo.setPhone(doc.getPhone());
+        vo.setAvatar(doc.getAvatar());
+        return vo;
+    }
+
+    private UserInfoResponse toUserInfoResponse(User u) {
+        UserInfoResponse vo = new UserInfoResponse();
+        vo.setId(u.getId());
+        vo.setNickname(u.getNickname());
+        vo.setPhone(u.getPhone());
+        vo.setAvatar(u.getAvatar());
+        return vo;
     }
 
     /**
