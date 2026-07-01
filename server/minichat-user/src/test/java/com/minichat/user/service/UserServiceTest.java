@@ -1,5 +1,6 @@
 package com.minichat.user.service;
 
+import com.minichat.user.dto.ChangePasswordRequest;
 import com.minichat.user.dto.UpdateUserRequest;
 import com.minichat.user.dto.UserInfoResponse;
 import com.minichat.user.entity.User;
@@ -11,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -33,6 +35,9 @@ class UserServiceTest {
     @Mock
     private GroupService groupService;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserService userService;
 
@@ -49,6 +54,7 @@ class UserServiceTest {
         user.setSignature("旧签名");
         user.setGender(1);
         user.setStatus(1);  // 正常状态
+        user.setPasswordHash("$2a$10$encodedOldPassword");  // BCrypt 格式
         user.setCreateTime(LocalDateTime.now());
     }
 
@@ -179,5 +185,65 @@ class UserServiceTest {
         verify(userIndexService, never()).removeUser(any());
         verify(friendService, never()).removeAllForUser(any());
         verify(groupService, never()).quitAllGroupsForUser(any());
+    }
+
+    // ==================== changePassword() ====================
+
+    @Test
+    void changePassword_ShouldUpdatePassword_WhenOldPasswordCorrect() {
+        when(userMapper.selectById(userId)).thenReturn(user);
+        when(passwordEncoder.matches("old123", "$2a$10$encodedOldPassword")).thenReturn(true);
+        when(passwordEncoder.matches("new456", "$2a$10$encodedOldPassword")).thenReturn(false);
+        when(passwordEncoder.encode("new456")).thenReturn("$2a$10$encodedNewPassword");
+
+        ChangePasswordRequest req = new ChangePasswordRequest("old123", "new456");
+        userService.changePassword(userId, req);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper).updateById(captor.capture());
+
+        User updated = captor.getValue();
+        assertEquals(userId, updated.getId());
+        assertEquals("$2a$10$encodedNewPassword", updated.getPasswordHash());
+    }
+
+    @Test
+    void changePassword_ShouldThrow_WhenOldPasswordWrong() {
+        when(userMapper.selectById(userId)).thenReturn(user);
+        when(passwordEncoder.matches("wrongPwd", "$2a$10$encodedOldPassword")).thenReturn(false);
+
+        ChangePasswordRequest req = new ChangePasswordRequest("wrongPwd", "new456");
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.changePassword(userId, req));
+        assertEquals("旧密码错误", ex.getMessage());
+
+        // 不应调用 updateById
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, never()).updateById(captor.capture());
+    }
+
+    @Test
+    void changePassword_ShouldThrow_WhenNewPasswordSameAsOld() {
+        when(userMapper.selectById(userId)).thenReturn(user);
+        when(passwordEncoder.matches("samePwd", "$2a$10$encodedOldPassword")).thenReturn(true);
+        when(passwordEncoder.matches("samePwd", "$2a$10$encodedOldPassword")).thenReturn(true);
+
+        ChangePasswordRequest req = new ChangePasswordRequest("samePwd", "samePwd");
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.changePassword(userId, req));
+        assertEquals("新密码不能与旧密码相同", ex.getMessage());
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userMapper, never()).updateById(captor.capture());
+    }
+
+    @Test
+    void changePassword_ShouldThrow_WhenUserNotFound() {
+        when(userMapper.selectById(userId)).thenReturn(null);
+
+        ChangePasswordRequest req = new ChangePasswordRequest("old123", "new456");
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> userService.changePassword(userId, req));
+        assertEquals("用户不存在", ex.getMessage());
     }
 }

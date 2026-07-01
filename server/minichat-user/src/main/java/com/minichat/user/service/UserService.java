@@ -1,11 +1,13 @@
 package com.minichat.user.service;
 
+import com.minichat.user.dto.ChangePasswordRequest;
 import com.minichat.user.dto.UpdateUserRequest;
 import com.minichat.user.dto.UserInfoResponse;
 import com.minichat.user.entity.User;
 import com.minichat.user.mapper.UserMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,9 @@ public class UserService {
 
     @Autowired
     private GroupService groupService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // 查询
     public UserInfoResponse getUserInfo(Long userId) {
@@ -48,6 +53,10 @@ public class UserService {
         if (req.getSignature() != null) update.setSignature(req.getSignature());
         if (req.getGender() != null) update.setGender(req.getGender());
         userMapper.updateById(update);
+
+        // 同步 ES 索引：重新写入完整用户文档
+        User updated = userMapper.selectById(userId);
+        userIndexService.indexUser(updated);
     }
 
     /**
@@ -81,5 +90,34 @@ public class UserService {
 
         // 4. 退出所有群（保留历史）
         groupService.quitAllGroupsForUser(userId);
+    }
+
+    /**
+     * 修改密码
+     * 1. 校验旧密码
+     * 2. BCrypt 加密新密码
+     * 3. 更新 passwordHash
+     */
+    public void changePassword(Long userId, ChangePasswordRequest req) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 校验旧密码
+        if (!passwordEncoder.matches(req.getOldPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("旧密码错误");
+        }
+
+        // 新密码不能和旧密码相同
+        if (passwordEncoder.matches(req.getNewPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("新密码不能与旧密码相同");
+        }
+
+        // 更新密码
+        User update = new User();
+        update.setId(userId);
+        update.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        userMapper.updateById(update);
     }
 }

@@ -1,6 +1,7 @@
 package com.minichat.user.controller;
 
 import com.minichat.common.result.Result;
+import com.minichat.user.dto.ChangePasswordRequest;
 import com.minichat.user.dto.UpdateUserRequest;
 import com.minichat.user.dto.UserInfoResponse;
 import com.minichat.user.service.FileService;
@@ -34,6 +35,14 @@ public class UserController {
     public Result<Void> updateUser(@PathVariable Long id,
                                    @Valid @RequestBody UpdateUserRequest req) {
         userService.updateUser(id, req);
+        return Result.success(null);
+    }
+
+    @PutMapping("/password")
+    @Operation(summary = "修改密码")
+    public Result<Void> changePassword(@RequestHeader("userId") Long userId,
+                                        @Valid @RequestBody ChangePasswordRequest req) {
+        userService.changePassword(userId, req);
         return Result.success(null);
     }
 
